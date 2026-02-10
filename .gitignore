@@ -19,5 +19,3 @@ venv/
 *.sqlite3
 *.xlsx
 
-# Embedded repo
-ideaboard/ideaboard/
