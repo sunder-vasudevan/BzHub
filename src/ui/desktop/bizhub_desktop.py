@@ -1,17 +1,24 @@
+
 """BizHub Desktop Application - Tkinter UI refactored to use services."""
-import json
 import os
+import sys
+import json
 import subprocess
-import tempfile
 import traceback
 import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from matplotlib.ticker import FixedFormatter, FixedLocator
 from PIL import Image, ImageDraw, ImageFont, ImageTk
+
+# Ensure project root is in sys.path for src imports
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from src.db import SQLiteAdapter
 from src.services import (
@@ -24,58 +31,131 @@ from src.core import CurrencyFormatter, HRCalculator
 
 class BizHubDesktopApp:
     """Main BizHub desktop application using Tkinter."""
-    
+
     def __init__(self, root, db_file="inventory.db"):
+        print("[DEBUG] Entered BizHubDesktopApp.__init__")
+        self.dark_mode = tk.BooleanVar(value=False)
         self.root = root
         self.root.title("BzHub - Complete ERP Suite")
         self.root.geometry("1200x800")
-        
         # Initialize database and services
         self.db = SQLiteAdapter(db_file)
+        print("[DEBUG] SQLiteAdapter initialized")
         self.auth_service = AuthService(self.db)
+        print("[DEBUG] AuthService initialized")
         self.inventory_service = InventoryService(self.db)
+        print("[DEBUG] InventoryService initialized")
         self.pos_service = POSService(self.db)
+        print("[DEBUG] POSService initialized")
         self.hr_service = HRService(self.db)
+        print("[DEBUG] HRService initialized")
         self.payroll_service = PayrollService(self.db)
+        print("[DEBUG] PayrollService initialized")
         self.appraisal_service = AppraisalService(self.db)
+        print("[DEBUG] AppraisalService initialized")
         self.visitor_service = VisitorService(self.db)
+        print("[DEBUG] VisitorService initialized")
         self.email_service = EmailService(self.db)
+        print("[DEBUG] EmailService initialized")
         self.activity_service = ActivityService(self.db)
+        print("[DEBUG] ActivityService initialized")
         self.company_service = CompanyService(self.db)
+        print("[DEBUG] CompanyService initialized")
         self.analytics_service = AnalyticsService(self.db)
-        
+        print("[DEBUG] AnalyticsService initialized")
         # Session state
         self.current_user = None
         self.current_role = None
-
-        # Theme
-        self.dark_mode = tk.BooleanVar(value=False)
-        self.colors = {}
-
-        # POS state
-        self.pos_cart = []
-        self.pos_selected_item = None
+        # Feature access control (default: all enabled)
+        self.feature_access = {
+            'dashboard': ['admin', 'manager', 'staff', 'viewer'],
+            'inventory': ['admin', 'manager', 'staff'],
+            'sales': ['admin', 'manager', 'staff'],
+            'reports': ['admin', 'manager'],
+            'hr': ['admin', 'manager'],
+            'settings': ['admin'],
+            'feature_management': ['admin'],
+        }
+        # Initialize UI and logic attributes to safe defaults
+        self.inv_name = tk.Entry(self.root)
+        self.inv_qty = tk.Entry(self.root)
+        self.inv_threshold = tk.Entry(self.root)
+        self.inv_cost = tk.Entry(self.root)
+        self.inv_sale = tk.Entry(self.root)
+        self.inv_desc = tk.Entry(self.root)
+        self.inv_image = tk.Entry(self.root)
+        self.quick_actions = []
+        self.quick_actions_container = tk.Frame(self.root)
         self.pos_qty_var = tk.StringVar(value="1")
-        self.last_receipt_text = None
-        self.last_receipt_time = None
+        self.pos_qty_entry = tk.Entry(self.root, textvariable=self.pos_qty_var)
 
-        # UI state
-        self.tab_index = {}
-        self.quick_actions = self._load_quick_actions()
-        self._dashboard_sales_trend = []
-        self._dashboard_sales_summary = []
-        self._reports_trend = []
-        self._reports_summary = []
-        
-        # Setup
-        self.setup_styles()
+        # Sidebar state
+
+        self._sidebar_compact = False
+        self._topnav_compact = False
+
+        # Show login screen on startup
+        print("[DEBUG] Calling show_login_screen from __init__")
         self.show_login_screen()
+
+    def delete_inventory_item(self):
+        try:
+            name = self.inv_name.get().strip()
+            if not name:
+                messagebox.showerror("Error", "Select item to delete")
+                return
+
+            messagebox.showwarning("Caution", "This will permanently delete the inventory item.")
+            if messagebox.askyesno("Confirm", f"Delete '{name}'?"):
+                if self.inventory_service.delete_item(name):
+                    username = self.current_user if isinstance(self.current_user, str) and self.current_user else "system"
+                    self.activity_service.log(username, "Delete Inventory", f"Deleted item: {name}")
+                    messagebox.showinfo("Success", "Item deleted")
+                    if hasattr(self, 'clear_inventory_form'):
+                        self.clear_inventory_form()
+                    if hasattr(self, 'refresh_inventory_list'):
+                        self.refresh_inventory_list()
+                else:
+                    messagebox.showerror("Error", "Failed to delete item")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error deleting item: {e}")
+
+    def show_feature_management_panel(self):
+        """Admin panel to enable/disable features for roles."""
+        self.clear_root()
+        frame = ttk.Frame(self.root, padding=20)
+        frame.pack(fill="both", expand=True)
+        ttk.Label(frame, text="Feature Management", font=("Arial", 16, "bold")).pack(pady=(0, 20))
+        roles = ['admin', 'manager', 'staff', 'viewer']
+        features = list(self.feature_access.keys())
+        self._feature_vars = {}
+        for feature in features:
+            row = ttk.Frame(frame)
+            row.pack(fill="x", pady=4)
+            ttk.Label(row, text=feature.capitalize(), width=18).pack(side="left")
+            self._feature_vars[feature] = {}
+            for role in roles:
+                var = tk.BooleanVar(value=role in self.feature_access[feature])
+                self._feature_vars[feature][role] = var
+                cb = ttk.Checkbutton(row, text=role.capitalize(), variable=var)
+                cb.pack(side="left", padx=4)
+        def save():
+            for feature in features:
+                self.feature_access[feature] = [role for role in roles if self._feature_vars[feature][role].get()]
+            messagebox.showinfo("Saved", "Feature access updated.")
+        ttk.Button(frame, text="Save", command=save, style="Success.TButton").pack(pady=20)
+
+    def _can_access(self, feature):
+        """Check if current user can access a feature."""
+        return self.current_role in self.feature_access.get(feature, [])
     
     def setup_styles(self):
-        """Setup UI styles."""
+        print("[DEBUG] Entered setup_styles")
         self.apply_theme()
+        print("[DEBUG] Returned from apply_theme in setup_styles")
 
     def apply_theme(self):
+        print("[DEBUG] Entered apply_theme")
         """Apply light/dark theme styles."""
         light = {
             "bg": "#F5F6FA",
@@ -158,41 +238,39 @@ class BizHubDesktopApp:
             widget.destroy()
     
     def show_login_screen(self):
+        print("[DEBUG] Entered show_login_screen")
         """Display login screen."""
         self.root.geometry("520x520")
+        print("[DEBUG] geometry set")
         self.root.minsize(520, 520)
-        self.clear_root()
-        self.apply_theme()
-        
-        frame = ttk.Frame(self.root, padding=20)
-        frame.pack(fill="both", expand=True)
-
-        logo_img = self._load_login_logo()
-        if logo_img:
-            logo_label = tk.Label(frame, image=logo_img, bg=self.colors["bg"])
-            logo_label.image = logo_img
-            logo_label.pack(pady=(0, 10))
-        
-        ttk.Label(frame, text="Complete ERP Suite", font=("Arial", 10)).pack(pady=(10, 20))
-        
-        ttk.Label(frame, text="Username:").pack(anchor="w", pady=(10, 0))
-        username_entry = ttk.Entry(frame, width=30)
-        username_entry.pack(pady=(0, 15), fill="x")
-        
-        ttk.Label(frame, text="Password:").pack(anchor="w", pady=(10, 0))
-        password_entry = ttk.Entry(frame, width=30, show="*")
-        password_entry.pack(pady=(0, 20), fill="x")
-        
+        print("[DEBUG] minsize set")
+        # self.clear_root()
+        print("[DEBUG] clear_root skipped")
+        # self.apply_theme()
+        print("[DEBUG] apply_theme skipped")
+        self.root.configure(bg="#FFEE99")
+        print("[DEBUG] bg set")
+        label = tk.Label(self.root, text="BizHub Login", font=("Arial", 16, "bold"), bg="#FFEE99", fg="#222")
+        label.pack(pady=20)
+        print("[DEBUG] label packed")
+        user_label = tk.Label(self.root, text="Username:", bg="#FFEE99")
+        user_label.pack()
+        print("[DEBUG] user_label packed")
+        username_entry = tk.Entry(self.root)
+        username_entry.pack(pady=5)
+        print("[DEBUG] username_entry packed")
+        pass_label = tk.Label(self.root, text="Password:", bg="#FFEE99")
+        pass_label.pack()
+        print("[DEBUG] pass_label packed")
+        password_entry = tk.Entry(self.root, show="*")
+        password_entry.pack(pady=5)
+        print("[DEBUG] password_entry packed")
         def login():
-            if not username_entry.winfo_exists():
-                return
             username = username_entry.get().strip()
             password = password_entry.get()
-            
             if not username or not password:
                 messagebox.showerror("Error", "Username and password required")
                 return
-            
             if self.auth_service.authenticate(username, password):
                 self.current_user = username
                 self.current_role = self.auth_service.get_user_role(username)
@@ -202,15 +280,16 @@ class BizHubDesktopApp:
                 self.show_main_ui()
             else:
                 messagebox.showerror("Login Failed", "Invalid credentials")
-        
-        ttk.Button(frame, text="Login", command=login, style="Success.TButton").pack(pady=10, fill="x")
-        ttk.Button(frame, text="Exit", command=self.root.quit, style="Danger.TButton").pack(fill="x")
-
+        login_btn = tk.Button(self.root, text="Login", command=login, bg="#6D28D9", fg="white", font=("Arial", 12, "bold"))
+        login_btn.pack(pady=10)
+        print("[DEBUG] login_btn packed")
+        exit_btn = tk.Button(self.root, text="Exit", command=self.root.quit, bg="#EF4444", fg="white")
+        exit_btn.pack()
+        print("[DEBUG] exit_btn packed")
         self.root.bind("<Return>", lambda _e: login())
-        username_entry.bind("<Return>", lambda _e: login())
-        password_entry.bind("<Return>", lambda _e: login())
-        
+        print("[DEBUG] bind set")
         username_entry.focus()
+        print("[DEBUG] focus set")
     
     def show_main_ui(self):
         """Display main application UI."""
@@ -233,6 +312,7 @@ class BizHubDesktopApp:
         nav_frame.pack(side="left", padx=24)
 
         self.nav_buttons = {}
+        self.nav_button_texts = {}
         nav_items = ["📊 Dashboard", "📇 CRM", "👔 HR", "⚙️ Settings"]
         for name in nav_items:
             base_name = name.split(" ", 1)[1]
@@ -242,15 +322,25 @@ class BizHubDesktopApp:
                              command=lambda n=base_name: self.select_tab(n))
             btn.pack(side="left", padx=4)
             self.nav_buttons[base_name] = btn
+            self.nav_button_texts[base_name] = name
 
         right_frame = tk.Frame(self.top_nav, bg=self.colors["nav_bg"])
         right_frame.pack(side="right", padx=16)
+        self.right_frame = right_frame
 
-        ttk.Button(right_frame, text="Help", command=self.open_help, style="Info.TButton").pack(side="left", padx=8)
-        ttk.Checkbutton(right_frame, text="Dark Mode", variable=self.dark_mode,
-                        command=self.toggle_dark_mode).pack(side="left", padx=12)
-        ttk.Label(right_frame, text=f"{self.current_user}", style="TLabel").pack(side="left", padx=8)
-        ttk.Button(right_frame, text="Logout", command=self.logout, style="Danger.TButton").pack(side="left")
+        self.help_btn = ttk.Button(right_frame, text="Help", command=self.open_help, style="Info.TButton")
+        self.help_btn.pack(side="left", padx=8)
+        self.dark_mode_toggle = ttk.Checkbutton(
+            right_frame,
+            text="Dark Mode",
+            variable=self.dark_mode,
+            command=self.toggle_dark_mode,
+        )
+        self.dark_mode_toggle.pack(side="left", padx=12)
+        self.user_label = ttk.Label(right_frame, text=f"{self.current_user}", style="TLabel")
+        self.user_label.pack(side="left", padx=8)
+        self.logout_btn = ttk.Button(right_frame, text="Logout", command=self.logout, style="Danger.TButton")
+        self.logout_btn.pack(side="left")
 
         # Main layout
         main_layout = tk.Frame(self.root, bg=self.colors["bg"])
@@ -261,14 +351,25 @@ class BizHubDesktopApp:
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        tk.Label(self.sidebar, text="Quick Actions", fg=self.colors["text"], bg=self.colors["sidebar_bg"],
-                 font=("Arial", 10, "bold")).pack(anchor="w", padx=12, pady=(12, 8))
+        self.sidebar_title_label = tk.Label(
+            self.sidebar,
+            text="Quick Actions",
+            fg=self.colors["text"],
+            bg=self.colors["sidebar_bg"],
+            font=("Arial", 10, "bold"),
+        )
+        self.sidebar_title_label.pack(anchor="w", padx=12, pady=(12, 8))
         self.quick_actions_container = tk.Frame(self.sidebar, bg=self.colors["sidebar_bg"])
         self.quick_actions_container.pack(fill="x")
         self.render_quick_actions()
 
-        ttk.Button(self.sidebar, text="⚙️ Manage Actions", style="Sidebar.TButton",
-               command=self.open_quick_actions_manager).pack(fill="x", padx=10, pady=(10, 4))
+        self.manage_actions_btn = ttk.Button(
+            self.sidebar,
+            text="⚙️ Manage Actions",
+            style="Sidebar.TButton",
+            command=self.open_quick_actions_manager,
+        )
+        self.manage_actions_btn.pack(fill="x", padx=10, pady=(10, 4))
 
         # Content area
         content = tk.Frame(main_layout, bg=self.colors["bg"])
@@ -289,7 +390,55 @@ class BizHubDesktopApp:
 
         # Default selection
         self.select_tab("Dashboard" if self.current_role == "admin" else "Inventory")
+        self._apply_sidebar_responsive()
+        self._apply_top_nav_responsive()
         self.root.bind("<F1>", lambda _e: self.open_help())
+        self.root.bind("<Configure>", self._on_root_resize, add="+")
+
+    def _on_root_resize(self, event):
+        """Handle root resize events for responsive layout behavior."""
+        if event.widget is self.root:
+            self._apply_sidebar_responsive()
+            self._apply_top_nav_responsive()
+
+    def _apply_top_nav_responsive(self):
+        """Auto-compact top navigation on smaller window widths."""
+        width = self.root.winfo_width()
+        compact = width < 1380
+        very_compact = width < 1200
+
+        if compact != self._topnav_compact:
+            self._topnav_compact = compact
+            for base_name, btn in self.nav_buttons.items():
+                full_text = self.nav_button_texts.get(base_name, base_name)
+                icon_text = full_text.split(" ", 1)[0]
+                btn.configure(text=icon_text if compact else full_text)
+
+            if hasattr(self, "help_btn"):
+                self.help_btn.configure(text="❓" if compact else "Help")
+            if hasattr(self, "dark_mode_toggle"):
+                self.dark_mode_toggle.configure(text="🌙" if compact else "Dark Mode")
+
+        if hasattr(self, "user_label") and hasattr(self, "logout_btn"):
+            if very_compact and self.user_label.winfo_manager():
+                self.user_label.pack_forget()
+            elif (not very_compact) and (not self.user_label.winfo_manager()):
+                self.user_label.pack(side="left", padx=8, before=self.logout_btn)
+
+    def _apply_sidebar_responsive(self):
+        """Auto-compact sidebar on smaller window widths."""
+        if not hasattr(self, "sidebar"):
+            return
+        width = self.root.winfo_width()
+        compact = width < 1280
+        if compact != self._sidebar_compact:
+            self._sidebar_compact = compact
+            self.sidebar.configure(width=104 if compact else 220)
+            if hasattr(self, "sidebar_title_label"):
+                self.sidebar_title_label.configure(text="Actions" if compact else "Quick Actions")
+            if hasattr(self, "manage_actions_btn"):
+                self.manage_actions_btn.configure(text="⚙️" if compact else "⚙️ Manage Actions")
+            self.render_quick_actions()
 
     def _apply_responsive_geometry(self):
         """Set window size based on screen size for laptop compatibility."""
@@ -314,31 +463,102 @@ class BizHubDesktopApp:
             return
         dpi = figure.get_dpi()
         figure.set_size_inches(event.width / dpi, event.height / dpi, forward=False)
-        font_size = max(6, min(11, int(event.height / 25)))
+        font_size = max(6, min(8, int(event.height / 65)))
         for ax in figure.axes:
             ax.tick_params(axis="x", labelsize=font_size, colors=self.colors["text"])
             ax.tick_params(axis="y", labelsize=font_size, colors=self.colors["text"])
+            for lbl in ax.get_xticklabels():
+                lbl.set_visible(True)
+                lbl.set_rotation(45)
+                lbl.set_ha("right")
             ax.spines["left"].set_color(self.colors["border"])
             ax.spines["bottom"].set_color(self.colors["border"])
-        try:
-            figure.tight_layout()
-        except Exception:
-            pass
+        figure.subplots_adjust(left=0.08, right=0.98, top=0.93, bottom=0.36)
         canvas.draw_idle()
+
+    def _set_sparse_date_ticks(self, ax, dates):
+        """Set readable date ticks for trend charts, including zoomed views."""
+        if not dates:
+            return
+
+        max_labels = 8
+        step = max(1, len(dates) // max_labels)
+        tick_idx = list(range(0, len(dates), step))
+        if tick_idx[-1] != len(dates) - 1:
+            tick_idx.append(len(dates) - 1)
+
+        tick_labels = [dates[i] for i in tick_idx]
+        ax.xaxis.set_major_locator(FixedLocator(tick_idx))
+        ax.xaxis.set_major_formatter(FixedFormatter(tick_labels))
+        ax.tick_params(axis="x", which="both", bottom=True, top=False, labelbottom=True, pad=2)
+        for lbl in ax.get_xticklabels():
+            lbl.set_rotation(45)
+            lbl.set_ha("right")
+            lbl.set_color(self.colors["text"])
+            lbl.set_fontsize(7)
+            lbl.set_visible(True)
 
     def _draw_sales_trend(self, ax, trend):
         """Draw sales trend chart on the given axes."""
         ax.clear()
         ax.set_facecolor(self.colors["card"])
         if trend:
-            dates = [d[0] for d in trend]
+            raw_dates = [d[0] for d in trend]
+            dates = []
+            for d in raw_dates:
+                try:
+                    dates.append(datetime.strptime(d, "%Y-%m-%d").strftime("%m-%d"))
+                except Exception:
+                    dates.append(str(d))
             totals = [d[1] for d in trend]
-            ax.plot(dates, totals, color=self.colors["primary"], linewidth=2)
-            ax.fill_between(dates, totals, color=self.colors["accent"], alpha=0.2)
-            ax.tick_params(axis="x", labelrotation=45, labelsize=8, colors=self.colors["text"])
+            x_positions = list(range(len(dates)))
+            ax.plot(
+                x_positions,
+                totals,
+                color=self.colors["primary"],
+                linewidth=2,
+                marker="o",
+                markersize=4,
+                markerfacecolor=self.colors["primary"],
+            )
+            ax.fill_between(x_positions, totals, color=self.colors["accent"], alpha=0.2)
+            self._set_sparse_date_ticks(ax, dates)
+            ax.set_xlim(-0.5, len(dates) - 0.5)
+            ax.xaxis.set_ticks_position("bottom")
+            ax.tick_params(axis="x", labelsize=8, colors=self.colors["text"])
             ax.tick_params(axis="y", labelsize=8, colors=self.colors["text"])
+            ax.grid(axis="y", color=self.colors["border"], alpha=0.5, linestyle="--", linewidth=0.8)
+            ax.margins(x=0.02)
+
+            if totals:
+                last_idx = len(totals) - 1
+                ax.annotate(
+                    f"{totals[last_idx]:.0f}",
+                    (x_positions[last_idx], totals[last_idx]),
+                    textcoords="offset points",
+                    xytext=(0, 8),
+                    ha="center",
+                    fontsize=8,
+                    color=self.colors["text"],
+                )
         else:
-            ax.text(0.5, 0.5, "No sales data", color=self.colors["muted"], ha="center", va="center")
+            dates = [
+                (datetime.now().date() - timedelta(days=i)).strftime("%m-%d")
+                for i in range(6, -1, -1)
+            ]
+            x_positions = list(range(len(dates)))
+            totals = [0 for _ in dates]
+            ax.plot(x_positions, totals, color=self.colors["primary"], linewidth=1.5, alpha=0.6)
+            self._set_sparse_date_ticks(ax, dates)
+            ax.set_xlim(-0.5, len(dates) - 0.5)
+            ax.xaxis.set_ticks_position("bottom")
+            ax.tick_params(axis="x", labelsize=7, colors=self.colors["text"])
+            ax.tick_params(axis="y", labelsize=7, colors=self.colors["text"])
+            ax.grid(axis="y", color=self.colors["border"], alpha=0.4, linestyle="--", linewidth=0.8)
+            ax.text(0.5, 0.6, "No sales data", color=self.colors["muted"], ha="center", va="center", transform=ax.transAxes)
+
+        ax.set_xlabel("Date", color=self.colors["muted"], fontsize=8)
+        ax.set_ylabel("Sales", color=self.colors["muted"], fontsize=8)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.spines["left"].set_color(self.colors["border"])
@@ -352,9 +572,21 @@ class BizHubDesktopApp:
         if top_items:
             labels = [i[0] for i in top_items]
             qtys = [i[1] for i in top_items]
-            ax.barh(labels, qtys, color=self.colors["primary"])
+            bars = ax.barh(labels, qtys, color=self.colors["primary"])
             ax.tick_params(axis="x", labelsize=8, colors=self.colors["text"])
             ax.tick_params(axis="y", labelsize=8, colors=self.colors["text"])
+            ax.grid(axis="x", color=self.colors["border"], alpha=0.5, linestyle="--", linewidth=0.8)
+
+            for bar, qty in zip(bars, qtys):
+                ax.text(
+                    bar.get_width() + 0.1,
+                    bar.get_y() + (bar.get_height() / 2),
+                    str(qty),
+                    va="center",
+                    ha="left",
+                    fontsize=8,
+                    color=self.colors["text"],
+                )
         else:
             ax.text(0.5, 0.5, "No sales data", color=self.colors["muted"], ha="center", va="center")
         ax.spines["top"].set_visible(False)
@@ -378,6 +610,13 @@ class BizHubDesktopApp:
         ax = fig.add_subplot(111)
         draw_fn(ax)
         fig.patch.set_facecolor(self.colors["card"])
+        fig.subplots_adjust(left=0.08, right=0.98, top=0.93, bottom=0.36)
+
+        ax.xaxis.set_visible(True)
+        ax.spines["bottom"].set_visible(True)
+        ax.tick_params(axis="x", which="both", bottom=True, top=False, labelbottom=True)
+        for lbl in ax.get_xticklabels():
+            lbl.set_visible(True)
 
         canvas = FigureCanvasTkAgg(fig, master=frame)
         widget = canvas.get_tk_widget()
@@ -397,7 +636,8 @@ class BizHubDesktopApp:
             self._generate_logo_image(logo_path)
 
             img = Image.open(logo_path)
-            img = img.resize((220, 70), Image.LANCZOS)
+            resample = getattr(Image, 'LANCZOS', getattr(Image, 'ANTIALIAS', 1))
+            img = img.resize((220, 70), resample)
             return ImageTk.PhotoImage(img)
         except Exception:
             return None
@@ -616,8 +856,42 @@ class BizHubDesktopApp:
 
     def toggle_dark_mode(self):
         """Toggle dark mode and refresh UI."""
+        self._save_ui_preferences()
         self.apply_theme()
         self.show_main_ui()
+
+    def _get_ui_prefs_path(self):
+        """Return path for UI preference storage."""
+        assets_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "assets")
+        assets_dir = os.path.abspath(assets_dir)
+        os.makedirs(assets_dir, exist_ok=True)
+        return os.path.join(assets_dir, "ui_preferences.json")
+
+    def _load_ui_preferences(self):
+        """Load persisted UI preferences (e.g., dark mode)."""
+        path = self._get_ui_prefs_path()
+        if not os.path.exists(path):
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                prefs = json.load(f)
+            if isinstance(prefs, dict):
+                self.dark_mode.set(bool(prefs.get("dark_mode", False)))
+        except Exception:
+            pass
+
+    def _save_ui_preferences(self):
+        """Persist UI preferences."""
+        path = self._get_ui_prefs_path()
+        prefs = {
+            "dark_mode": bool(self.dark_mode.get()),
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(prefs, f, indent=2)
+        except Exception:
+            pass
 
     def show_low_stock_popup(self):
         """Show low stock items in a quick popup."""
@@ -674,6 +948,8 @@ class BizHubDesktopApp:
             if target in {"Dashboard", "Reports", "HR", "Settings"} and self.current_role != "admin":
                 continue
             label = action.get("label") or target
+            if self._sidebar_compact:
+                label = label.split(" ", 1)[0] if " " in label else label[:2]
             ttk.Button(self.quick_actions_container, text=label, style="Sidebar.TButton",
                        command=lambda t=target: self.handle_quick_action(t)).pack(fill="x", padx=10, pady=4)
 
@@ -830,6 +1106,8 @@ class BizHubDesktopApp:
         self.kpi_labels["inventory"] = self._create_kpi_card(kpi_row, "Inventory Value")
         self.kpi_labels["low_stock"] = self._create_kpi_card(kpi_row, "Low Stock Items")
         self.kpi_labels["visitors"] = self._create_kpi_card(kpi_row, "Visitors")
+        self.kpi_labels["avg_daily_sales"] = self._create_kpi_card(kpi_row, "Avg Daily Sales")
+        self.kpi_labels["sales_growth"] = self._create_kpi_card(kpi_row, "Sales Growth %")
 
         # Charts
         charts_row = tk.Frame(container, bg=self.colors["bg"])
@@ -924,14 +1202,32 @@ class BizHubDesktopApp:
         self._dashboard_sales_summary = sales_summary
 
         sales_total = sum(r[1] for r in sales_trend) if sales_trend else 0.0
+        avg_daily_sales = (sales_total / days) if days else 0.0
         inv_value = self.inventory_service.get_inventory_value()
         low_stock = self.inventory_service.get_low_stock_items()
         visitors_count = self.visitor_service.get_total_visitors_count()
+
+        prev_end = datetime.strptime(start_date, "%Y-%m-%d") - timedelta(days=1)
+        prev_start = prev_end - timedelta(days=max(1, days) - 1)
+        prev_trend = self.analytics_service.get_sales_trend(
+            prev_start.strftime("%Y-%m-%d"),
+            prev_end.strftime("%Y-%m-%d")
+        )
+        prev_total = sum(r[1] for r in prev_trend) if prev_trend else 0.0
+        if prev_total > 0:
+            growth_pct = ((sales_total - prev_total) / prev_total) * 100
+            growth_text = f"{growth_pct:+.1f}%"
+        elif sales_total > 0:
+            growth_text = "+100.0%"
+        else:
+            growth_text = "0.0%"
 
         self.kpi_labels["sales"].config(text=CurrencyFormatter.format_currency(sales_total))
         self.kpi_labels["inventory"].config(text=CurrencyFormatter.format_currency(inv_value))
         self.kpi_labels["low_stock"].config(text=str(len(low_stock)))
         self.kpi_labels["visitors"].config(text=str(visitors_count))
+        self.kpi_labels["avg_daily_sales"].config(text=CurrencyFormatter.format_currency(avg_daily_sales))
+        self.kpi_labels["sales_growth"].config(text=growth_text)
 
         self._draw_sales_trend(self.sales_ax, sales_trend)
         self.sales_fig.patch.set_facecolor(self.colors["card"])
@@ -965,6 +1261,10 @@ class BizHubDesktopApp:
 
         container = tk.Frame(frame, bg=self.colors["bg"])
         container.pack(fill="both", expand=True, padx=12, pady=12)
+
+        # Define list_card before any use
+        list_card = tk.Frame(container, bg=self.colors["card"])
+        list_card.pack(fill="both", expand=True, padx=0, pady=0)
 
         header = tk.Frame(container, bg=self.colors["bg"])
         header.pack(fill="x", pady=(0, 12))
@@ -1019,6 +1319,91 @@ class BizHubDesktopApp:
         tk.Label(list_header, text="Inventory Items", bg=self.colors["card"], fg=self.colors["text"],
                  font=("Arial", 10, "bold")).pack(side="left")
 
+        # Export/Import buttons
+        export_import_row = tk.Frame(list_card, bg=self.colors["card"])
+        export_import_row.pack(fill="x", pady=(4, 8))
+        ttk.Button(export_import_row, text="Export CSV", command=self.export_inventory_csv, style="Info.TButton").pack(side="left", padx=2)
+        ttk.Button(export_import_row, text="Export Excel", command=self.export_inventory_excel, style="Info.TButton").pack(side="left", padx=2)
+        ttk.Button(export_import_row, text="Import CSV", command=self.import_inventory_csv, style="Info.TButton").pack(side="left", padx=12)
+        ttk.Button(export_import_row, text="Import Excel", command=self.import_inventory_excel, style="Info.TButton").pack(side="left", padx=2)
+    def export_inventory_csv(self):
+        """Export inventory to CSV file."""
+        import csv
+        from tkinter import filedialog
+        items = self.inventory_service.get_all_items()
+        if not items:
+            messagebox.showwarning("Export", "No inventory data to export.")
+            return
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")],
+            title="Export Inventory to CSV"
+        )
+        if not file_path:
+            return
+        try:
+            with open(file_path, mode="w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Item Name", "Quantity", "Threshold", "Cost Price", "Sale Price", "Description"])
+                for item in items:
+                    writer.writerow(item)
+            messagebox.showinfo("Export", f"Inventory exported to {file_path}")
+        except Exception as e:
+            messagebox.showerror("Export", f"Failed to export: {e}")
+
+    def export_inventory_excel(self):
+        """Export inventory to Excel (placeholder)."""
+        messagebox.showinfo("Export", "Export to Excel not yet implemented.")
+
+    def import_inventory_csv(self):
+        """Import inventory from CSV file."""
+        import csv
+        from tkinter import filedialog
+        file_path = filedialog.askopenfilename(
+            filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")],
+            title="Import Inventory from CSV"
+        )
+        if not file_path:
+            return
+        imported = 0
+        skipped = 0
+        try:
+            with open(file_path, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    try:
+                        name = row.get("Item Name") or row.get("item_name")
+                        qty = int(row.get("Quantity") or row.get("quantity") or 0)
+                        threshold = int(row.get("Threshold") or row.get("threshold") or 0)
+                        cost = float(row.get("Cost Price") or row.get("cost_price") or 0)
+                        sale = float(row.get("Sale Price") or row.get("sale_price") or 0)
+                        desc = row.get("Description") or row.get("description") or ""
+                        # Try update, else add
+                        if self.inventory_service.update_item(name, quantity=qty, threshold=threshold, cost_price=cost, sale_price=sale, description=desc):
+                            imported += 1
+                        else:
+                            if self.inventory_service.add_item(name, qty, threshold, cost, sale, desc):
+                                imported += 1
+                            else:
+                                skipped += 1
+                    except Exception:
+                        skipped += 1
+            self.refresh_inventory_list()
+            messagebox.showinfo("Import", f"Imported: {imported}, Skipped: {skipped}")
+        except Exception as e:
+            messagebox.showerror("Import", f"Failed to import: {e}")
+
+    def import_inventory_excel(self):
+        """Import inventory from Excel (placeholder)."""
+        messagebox.showinfo("Import", "Import from Excel not yet implemented.")
+
+
+        # Ensure list_card is defined before use
+        container = tk.Frame(self.root, bg=self.colors["bg"])
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+        list_card = tk.Frame(container, bg=self.colors["card"])
+        list_card.pack(fill="both", expand=True, padx=0, pady=0)
+
         search_row = tk.Frame(list_card, bg=self.colors["card"])
         search_row.pack(fill="x", pady=(8, 6))
         tk.Label(search_row, text="Search", bg=self.colors["card"], fg=self.colors["muted"]).pack(side="left", padx=(0, 6))
@@ -1070,38 +1455,34 @@ class BizHubDesktopApp:
             if not name:
                 messagebox.showerror("Error", "Select item to update")
                 return
-            
+
             qty = int(self.inv_qty.get()) if self.inv_qty.get() else None
             threshold = int(self.inv_threshold.get()) if self.inv_threshold.get() else None
             cost = float(self.inv_cost.get()) if self.inv_cost.get() else None
             sale = float(self.inv_sale.get()) if self.inv_sale.get() else None
             desc = self.inv_desc.get().strip()
-            
+
             if self.inventory_service.update_item(name, quantity=qty, threshold=threshold, cost_price=cost, sale_price=sale, description=desc if desc else None):
                 self.activity_service.log(self.current_user, "Update Inventory", f"Updated item: {name}")
-                messagebox.showinfo("Success", "Item updated")
-                self.refresh_inventory_list()
-            else:
-                messagebox.showerror("Error", "Failed to update item")
-        except ValueError as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Invalid input: {e}")
-    
-    def delete_inventory_item(self):
-        """Delete inventory item."""
-        name = self.inv_name.get().strip()
-        if not name:
-            messagebox.showerror("Error", "Select item to delete")
-            return
+        try:
+            name = self.inv_name.get().strip()
+            if not name:
+                messagebox.showerror("Error", "Select item to delete")
+                return
 
-        messagebox.showwarning("Caution", "This will permanently delete the inventory item.")
-        if messagebox.askyesno("Confirm", f"Delete '{name}'?"):
-            if self.inventory_service.delete_item(name):
-                self.activity_service.log(self.current_user, "Delete Inventory", f"Deleted item: {name}")
-                messagebox.showinfo("Success", "Item deleted")
-                self.clear_inventory_form()
-                self.refresh_inventory_list()
-            else:
-                messagebox.showerror("Error", "Failed to delete item")
+            messagebox.showwarning("Caution", "This will permanently delete the inventory item.")
+            if messagebox.askyesno("Confirm", f"Delete '{name}'?"):
+                if self.inventory_service.delete_item(name):
+                    self.activity_service.log(self.current_user, "Delete Inventory", f"Deleted item: {name}")
+                    messagebox.showinfo("Success", "Item deleted")
+                    self.clear_inventory_form()
+                    self.refresh_inventory_list()
+                else:
+                    messagebox.showerror("Error", "Failed to delete item")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error deleting item: {e}")
     
     def clear_inventory_form(self):
         """Clear inventory form."""
@@ -2163,15 +2544,15 @@ class BizHubDesktopApp:
             period_end.delete(0, tk.END)
             period_end.insert(0, record[3] or "")
             base_salary.delete(0, tk.END)
-            base_salary.insert(0, record[4] or 0)
+            base_salary.insert(0, str(record[4]) if record[4] is not None else "0")
             allowances.delete(0, tk.END)
-            allowances.insert(0, record[5] or 0)
+            allowances.insert(0, str(record[5]) if record[5] is not None else "0")
             deductions.delete(0, tk.END)
-            deductions.insert(0, record[6] or 0)
+            deductions.insert(0, str(record[6]) if record[6] is not None else "0")
             overtime_hours.delete(0, tk.END)
-            overtime_hours.insert(0, record[7] or 0)
+            overtime_hours.insert(0, str(record[7]) if record[7] is not None else "0")
             overtime_rate.delete(0, tk.END)
-            overtime_rate.insert(0, record[8] or 0)
+            overtime_rate.insert(0, str(record[8]) if record[8] is not None else "0")
             status.delete(0, tk.END)
             status.insert(0, record[11] or "Draft")
             paid_date.delete(0, tk.END)

@@ -1,5 +1,7 @@
 # Bug Tracker
 
+> Canonical tracker moved to [documentation/FEATURE_REQUESTS_AND_BUGS.md](documentation/FEATURE_REQUESTS_AND_BUGS.md). Keep all new bugs and feature requests there for a single reference.
+
 ## Open
 
 ### 1) Zoomed chart x-axis missing

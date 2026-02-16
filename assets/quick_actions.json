@@ -1,15 +1,7 @@
 [
   {
-    "label": "\u2795 Add Item",
-    "target": "Inventory"
-  },
-  {
-    "label": "\ud83e\uddfe New Sale",
-    "target": "POS"
-  },
-  {
-    "label": "POS",
-    "target": "POS"
+    "label": "Visitors",
+    "target": "Visitors"
   },
   {
     "label": "Visitors",

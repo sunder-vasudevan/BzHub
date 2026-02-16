@@ -6,12 +6,46 @@ from src.core import PasswordManager
 
 
 class SQLiteAdapter(DatabaseAdapter):
+    def create_user(self, username: str, password_hash: str, role: str = 'user'):
+        """Create a new user with the specified role."""
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            if not cursor.fetchone():
+                cursor.execute(
+                    'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+                    (username, password_hash, role)
+                )
+                conn.commit()
+                return True
+            else:
+                return False  # User already exists
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def set_user_role(self, username: str, role: str) -> bool:
+        """Set the role for an existing user."""
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET role = ? WHERE username = ?', (role, username))
+            conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Error setting user role: {e}")
+            return False
+        finally:
+            conn.close()
     """SQLite database adapter - implements abstract DatabaseAdapter interface."""
-    
+
     def __init__(self, db_file: str = "inventory.db"):
         self.db_file = db_file
         self.init_database()
-    
+
     def init_database(self):
         """Initialize SQLite database with all tables."""
         conn = sqlite3.connect(self.db_file)
