@@ -9,6 +9,7 @@ import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime, timedelta
+import tempfile
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -16,9 +17,11 @@ from matplotlib.ticker import FixedFormatter, FixedLocator
 from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 # Ensure project root is in sys.path for src imports
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+import pathlib
+current_file = pathlib.Path(__file__).resolve()
+project_root = current_file.parents[3] if len(current_file.parents) > 3 else current_file.parents[0]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from src.db import SQLiteAdapter
 from src.services import (
@@ -817,7 +820,7 @@ class BizHubDesktopApp:
             stripped = lines[j].strip()
             if stripped.startswith("#"):
                 hashes = len(stripped) - len(stripped.lstrip("#"))
-                if hashes <= level:
+                if level is not None and hashes <= level:
                     end = j
                     break
         return "\n".join(lines[start:end]).strip()
@@ -1042,7 +1045,8 @@ class BizHubDesktopApp:
     
     def logout(self):
         """Logout user."""
-        self.activity_service.log(self.current_user, "Logout", "User logged out")
+        username = self.current_user if self.current_user is not None else "Unknown"
+        self.activity_service.log(username, "Logout", "User logged out")
         self.current_user = None
         self.current_role = None
         self.show_login_screen()
@@ -1379,10 +1383,10 @@ class BizHubDesktopApp:
                         sale = float(row.get("Sale Price") or row.get("sale_price") or 0)
                         desc = row.get("Description") or row.get("description") or ""
                         # Try update, else add
-                        if self.inventory_service.update_item(name, quantity=qty, threshold=threshold, cost_price=cost, sale_price=sale, description=desc):
+                        if name is not None and self.inventory_service.update_item(name, quantity=qty, threshold=threshold, cost_price=cost, sale_price=sale, description=desc):
                             imported += 1
                         else:
-                            if self.inventory_service.add_item(name, qty, threshold, cost, sale, desc):
+                            if name is not None and self.inventory_service.add_item(name, qty, threshold, cost, sale, desc):
                                 imported += 1
                             else:
                                 skipped += 1
@@ -1432,14 +1436,15 @@ class BizHubDesktopApp:
             cost = float(self.inv_cost.get())
             sale = float(self.inv_sale.get())
             desc = self.inv_desc.get().strip()
-            image_path = self.inv_image.get().strip() or None
-            
+            image_path = self.inv_image.get().strip()
             if not name:
                 messagebox.showerror("Error", "Item name required")
                 return
-
+            if not image_path:
+                image_path = ""
+            username = self.current_user if self.current_user is not None else "Unknown"
             if self.inventory_service.add_item(name, qty, threshold, cost, sale, desc, image_path=image_path):
-                self.activity_service.log(self.current_user, "Add Inventory", f"Added item: {name}")
+                self.activity_service.log(username, "Add Inventory", f"Added item: {name}")
                 messagebox.showinfo("Success", f"Item '{name}' added")
                 self.clear_inventory_form()
                 self.refresh_inventory_list()
@@ -1455,15 +1460,14 @@ class BizHubDesktopApp:
             if not name:
                 messagebox.showerror("Error", "Select item to update")
                 return
-
-            qty = int(self.inv_qty.get()) if self.inv_qty.get() else None
-            threshold = int(self.inv_threshold.get()) if self.inv_threshold.get() else None
-            cost = float(self.inv_cost.get()) if self.inv_cost.get() else None
-            sale = float(self.inv_sale.get()) if self.inv_sale.get() else None
+            qty = int(self.inv_qty.get()) if self.inv_qty.get() else 0
+            threshold = int(self.inv_threshold.get()) if self.inv_threshold.get() else 0
+            cost = float(self.inv_cost.get()) if self.inv_cost.get() else 0.0
+            sale = float(self.inv_sale.get()) if self.inv_sale.get() else 0.0
             desc = self.inv_desc.get().strip()
-
-            if self.inventory_service.update_item(name, quantity=qty, threshold=threshold, cost_price=cost, sale_price=sale, description=desc if desc else None):
-                self.activity_service.log(self.current_user, "Update Inventory", f"Updated item: {name}")
+            username = self.current_user if self.current_user is not None else "Unknown"
+            if self.inventory_service.update_item(name, quantity=qty, threshold=threshold, cost_price=cost, sale_price=sale, description=desc if desc else ""):
+                self.activity_service.log(username, "Update Inventory", f"Updated item: {name}")
         except Exception as e:
             messagebox.showerror("Error", f"Invalid input: {e}")
         try:
@@ -1471,11 +1475,11 @@ class BizHubDesktopApp:
             if not name:
                 messagebox.showerror("Error", "Select item to delete")
                 return
-
             messagebox.showwarning("Caution", "This will permanently delete the inventory item.")
             if messagebox.askyesno("Confirm", f"Delete '{name}'?"):
+                username = self.current_user if self.current_user is not None else "Unknown"
                 if self.inventory_service.delete_item(name):
-                    self.activity_service.log(self.current_user, "Delete Inventory", f"Deleted item: {name}")
+                    self.activity_service.log(username, "Delete Inventory", f"Deleted item: {name}")
                     messagebox.showinfo("Success", "Item deleted")
                     self.clear_inventory_form()
                     self.refresh_inventory_list()
@@ -1560,7 +1564,8 @@ class BizHubDesktopApp:
             details = self.inventory_service.get_item(values[0])
             self.inv_image.delete(0, tk.END)
             if details and details.get("image_path"):
-                self.inv_image.insert(0, details.get("image_path"))
+                image_path = details.get("image_path") or ""
+                self.inv_image.insert(0, image_path)
     
     def create_pos_tab(self, notebook=None):
         """Create POS tab."""
@@ -1857,14 +1862,16 @@ class BizHubDesktopApp:
             qty = item["quantity"]
             price = item["price"]
 
-            self.pos_service.record_sale(name, qty, price, self.current_user)
+            username = self.current_user if self.current_user is not None else "Unknown"
+            self.pos_service.record_sale(name, qty, price, username)
 
             current = self.inventory_service.get_item(name)
             if current:
                 new_qty = max(0, (current.get("quantity", 0) - qty))
                 self.inventory_service.update_item(name, quantity=new_qty)
 
-        self.activity_service.log(self.current_user, "POS Checkout", f"Processed {len(self.pos_cart)} items")
+        username = self.current_user if self.current_user is not None else "Unknown"
+        self.activity_service.log(username, "POS Checkout", f"Processed {len(self.pos_cart)} items")
         self.clear_cart()
         self.load_pos_items()
         self.load_quick_add_items()
@@ -2357,7 +2364,8 @@ class BizHubDesktopApp:
                     notes.get().strip(),
                     1,
                 ):
-                    self.activity_service.log(self.current_user, "Add Employee", f"Added employee: {name.get().strip()}")
+                    username = self.current_user if self.current_user is not None else "Unknown"
+                    self.activity_service.log(username, "Add Employee", f"Added employee: {name.get().strip()}")
                     self.refresh_hr_cards()
                     dialog.destroy()
                 else:
@@ -2888,7 +2896,7 @@ class BizHubDesktopApp:
                 messagebox.showerror("Feedback", "Select target employee")
                 return
             appraisal_id = parse_appraisal_id(req_app.get())
-            if self.appraisal_service.create_feedback_request(appraisal_id, self.current_user or "", target_id, req_msg.get("1.0", tk.END).strip()):
+            if appraisal_id is not None and self.appraisal_service.create_feedback_request(appraisal_id, self.current_user or "", target_id, req_msg.get("1.0", tk.END).strip()):
                 req_msg.delete("1.0", tk.END)
                 refresh_requests()
             else:
@@ -2905,7 +2913,7 @@ class BizHubDesktopApp:
                 rating = float(fb_rating.get() or 0)
             except Exception:
                 rating = 0
-            if self.appraisal_service.add_feedback_entry(appraisal_id, from_id, to_id, rating, fb_text.get("1.0", tk.END).strip()):
+            if appraisal_id is not None and self.appraisal_service.add_feedback_entry(appraisal_id, from_id, to_id, rating, fb_text.get("1.0", tk.END).strip()):
                 fb_text.delete("1.0", tk.END)
                 fb_rating.delete(0, tk.END)
                 refresh_entries()
@@ -3025,7 +3033,8 @@ class BizHubDesktopApp:
                 if not messagebox.askyesno("Confirm", "Deactivate this employee?"):
                     return
             if self.hr_service.update_employee(emp_id, is_active=1 if active else 0):
-                self.activity_service.log(self.current_user, "HR Status", f"Employee {emp_id} set to {'active' if active else 'inactive'}")
+                username = self.current_user if self.current_user is not None else "Unknown"
+                self.activity_service.log(username, "HR Status", f"Employee {emp_id} set to {'active' if active else 'inactive'}")
                 self.refresh_hr_cards()
             else:
                 messagebox.showerror("HR", "Failed to update employee status")
@@ -3238,7 +3247,8 @@ class BizHubDesktopApp:
             return
 
         self.company_service.save_info(name, address, phone, email, tax_id, bank_details)
-        self.activity_service.log(self.current_user, "Company Info", "Company info updated")
+        username = self.current_user if self.current_user is not None else "Unknown"
+        self.activity_service.log(username, "Company Info", "Company info updated")
         self.set_company_fields_state("disabled")
         self.company_lock_status.config(text="Locked")
         messagebox.showinfo("Company Info", "Company info saved and locked")
@@ -3284,7 +3294,8 @@ class BizHubDesktopApp:
             return
 
         self.email_service.save_config(smtp_server, smtp_port, sender_email, sender_password, recipient_email)
-        self.activity_service.log(self.current_user, "Email Config", "Email settings updated")
+        username = self.current_user if self.current_user is not None else "Unknown"
+        self.activity_service.log(username, "Email Config", "Email settings updated")
         messagebox.showinfo("Email Settings", "Email settings saved")
 
     def test_email_config(self):
