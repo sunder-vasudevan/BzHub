@@ -1,5 +1,13 @@
 # BizHub - Cloud-Ready ERP Suite Architecture
 
+## 2026 Web & Cloud Architecture Update
+
+**Frontend:** Next.js (TypeScript) app in `bzhub_web/` (deployed on Vercel)
+**Backend API:** FastAPI app in `api/` (deployed on Render)
+**Database:** Supabase (managed Postgres, auth, storage)
+
+All major design choices and future decisions will be documented in this file. Please update this document with every significant architectural or technology decision.
+
 **Version:** 1.0.0  
 **Status:** Refactored with cloud-ready, modular architecture
 
@@ -39,12 +47,13 @@ bizhub/
 │   │   ├── desktop/
 │   │   │   ├── bizhub_desktop.py    # Tkinter desktop app
 │   │   │   └── __init__.py
-│   │   └── web/                     # Future: Flask/Vue.js web UI
+│   │   └── web/                     # (Legacy) Flask/Vue.js web UI (see bzhub_web/ for Next.js)
+├── bzhub_web/                  # Next.js (TypeScript) frontend (Vercel)
 │   │
 │   ├── config.py               # Environment-based configuration
 │   └── __init__.py
 │
-├── api/                        # Future: REST API layer
+├── api/                        # REST API layer (FastAPI, Render)
 │   ├── app.py                 # FastAPI server
 │   └── __init__.py
 │
@@ -180,8 +189,8 @@ python bizhub.py --db mydb.db
 - Cloud storage for attachments
 
 ### Phase 3: Web Interface
-- REST API layer (`api/app.py` with FastAPI)
-- Web UI (`src/ui/web/` with Flask + Vue.js)
+- REST API layer (`api/app.py` with FastAPI, deployed on Render)
+- Web UI (`bzhub_web/` with Next.js, deployed on Vercel)
 - Mobile-responsive design
 - Real-time notifications
 
@@ -269,7 +278,7 @@ inventory = InventoryService(db)
 ## Notes for Future Development
 
 1. **Database Switching**: Only the `src/db/` layer needs to change
-2. **UI Swapping**: Create new adapter in `src/ui/web/` for Flask/Vue
+2. **UI Swapping**: Web UI now lives in `bzhub_web/` (Next.js, Vercel)
 3. **API Creation**: Expose services as REST endpoints in `api/app.py`
 4. **Offline-First Desktop**: Current design supports offline mode
 5. **Cloud Sync**: Services layer handles sync logic independently
@@ -283,5 +292,5 @@ inventory = InventoryService(db)
 
 ---
 
-**Last Updated:** February 4, 2026  
-**Architecture Version:** 1.0.0 (Cloud-Ready)
+**Last Updated:** February 18, 2026  
+**Architecture Version:** 1.1.0 (Web & Cloud Ready)

@@ -1,4 +1,5 @@
 
+
 """BizHub Desktop Application - Tkinter UI refactored to use services."""
 import os
 import sys
@@ -35,6 +36,25 @@ from src.core import CurrencyFormatter, HRCalculator
 
 
 class BizHubDesktopApp:
+    def show_main_ui(self):
+        """Show the main UI after login or test bypass."""
+        self.clear_root()
+        self.apply_theme()
+        self.root.geometry("1200x800")
+        self.root.minsize(900, 600)
+        # Re-create sidebar, topbar, and content_frame
+        self.sidebar_frame = tk.Frame(self.root, bg="#1F2937", width=200)
+        self.sidebar_frame.pack(side="left", fill="y")
+        self.topbar_frame = tk.Frame(self.root, bg="#111827", height=56)
+        self.topbar_frame.pack(side="top", fill="x")
+        self.content_frame = tk.Frame(self.root, bg="#F5F6FA")
+        self.content_frame.pack(side="right", fill="both", expand=True)
+        self.app_title_label = tk.Label(self.topbar_frame, text="BizHub", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 18, "bold"))
+        self.app_title_label.pack(side="left", padx=20)
+        self.user_info_label = tk.Label(self.topbar_frame, text=f"User: {self.current_user}", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 12))
+        self.user_info_label.pack(side="right", padx=20)
+        # Show dashboard or placeholder
+        self.show_dashboard()
     def show_dashboard(self):
         self._show_placeholder("Dashboard")
 

@@ -260,6 +260,22 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Owner:** Copilot
 - **Summary:** Migrate all remaining business logic (sales, HR, payroll, appraisals, analytics, etc.) to SupabaseService. Refactor/remove legacy service usages for these modules. Ensure all CRUD and reporting operations use Supabase. Test multi-user, multi-desktop scenarios for all modules.
 
+### FEAT-031 — Workspace Reorganization
+- **Status:** Open
+- **Priority:** High
+- **Target Phase:** Architecture/Maintainability
+- **Summary:** Plan and execute a workspace reorganization to improve clarity, modularity, and maintainability. Move related files into appropriate folders (backend, frontend, shared, docs), update import paths, clean up duplicates/obsolete files, and document the new structure in the architecture file.
+- **Rationale:**
+  - Current workspace structure is sprawling and can be confusing.
+  - A clear, modular structure will make onboarding, development, and deployment easier.
+- **Suggested Steps:**
+  1. Map current workspace and propose new structure.
+  2. Move/categorize files and folders accordingly.
+  3. Update all import paths and references.
+  4. Remove or archive obsolete/duplicate files.
+  5. Update documentation (ARCHITECTURE.md) to reflect changes.
+- **Owner:** Unassigned
+
 ---
 
 ## In Progress
@@ -310,3 +326,17 @@ Validation Log:
 
 **Created:** 2026-02-15
 **Last Updated:** 2026-02-15
+
+## 2026-02-18
+
+### Features Added
+- FastAPI backend modules for:
+  - Inventory (/inventory)
+  - HR (/hr/employees)
+  - POS (/pos/transactions)
+  - Visitor (/visitors)
+- All modules fetch data directly from Supabase tables using supabase-py client.
+- Supabase integration: credentials loaded from environment variables (SUPABASE_URL, SUPABASE_SERVICE_KEY).
+
+### Bugs/Issues
+- None reported for new modules as of this update.
