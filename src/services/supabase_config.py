@@ -1,0 +1,4 @@
+# Supabase configuration for BizHub
+SUPABASE_URL = "https://jltscsnngvdrivqirjcb.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsdHNjc25uZ3Zkcml2cWlyamNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjc5OTcsImV4cCI6MjA4Njk0Mzk5N30.t-hS2gcw8YXOhASUeqE73yvC7aVqTuX_U3NP6uxX7OU"
+SUPABASE_PASSWORD = "kasFem-kutco2-givhuq"

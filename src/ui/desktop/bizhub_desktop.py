@@ -29,6 +29,8 @@ from src.services import (
     VisitorService, EmailService, ActivityService, CompanyService, AnalyticsService,
     PayrollService, AppraisalService
 )
+from src.services.supabase_service import SupabaseService
+from src.services.supabase_config import SUPABASE_URL, SUPABASE_KEY
 from src.core import CurrencyFormatter, HRCalculator
 
 
@@ -68,31 +70,48 @@ class BizHubDesktopApp:
         self.root = root
         self.root.title("BzHub - Complete ERP Suite")
         self.root.geometry("1200x800")
-        # Initialize database and services
-        self.db = SQLiteAdapter(db_file)
-        print("[DEBUG] SQLiteAdapter initialized")
-        self.auth_service = AuthService(self.db)
-        print("[DEBUG] AuthService initialized")
-        self.inventory_service = InventoryService(self.db)
-        print("[DEBUG] InventoryService initialized")
-        self.pos_service = POSService(self.db)
-        print("[DEBUG] POSService initialized")
-        self.hr_service = HRService(self.db)
-        print("[DEBUG] HRService initialized")
-        self.payroll_service = PayrollService(self.db)
-        print("[DEBUG] PayrollService initialized")
-        self.appraisal_service = AppraisalService(self.db)
-        print("[DEBUG] AppraisalService initialized")
-        self.visitor_service = VisitorService(self.db)
-        print("[DEBUG] VisitorService initialized")
-        self.email_service = EmailService(self.db)
-        print("[DEBUG] EmailService initialized")
-        self.activity_service = ActivityService(self.db)
-        print("[DEBUG] ActivityService initialized")
-        self.company_service = CompanyService(self.db)
-        print("[DEBUG] CompanyService initialized")
-        self.analytics_service = AnalyticsService(self.db)
-        print("[DEBUG] AnalyticsService initialized")
+        # Initialize Supabase for multi-user, multi-desktop
+        self.supabase = SupabaseService(SUPABASE_URL, SUPABASE_KEY)
+        print("[DEBUG] SupabaseService initialized")
+        # Session state
+        self.current_user = None
+        self.current_role = None
+        # Feature access control (default: all enabled)
+        self.feature_access = {
+            'dashboard': ['admin', 'manager', 'staff', 'viewer'],
+            'inventory': ['admin', 'manager', 'staff'],
+            'sales': ['admin', 'manager', 'staff'],
+            'reports': ['admin', 'manager'],
+            'hr': ['admin', 'manager'],
+            'settings': ['admin'],
+            'feature_management': ['admin'],
+        }
+        # --- Modern UI Layout ---
+        self.sidebar_frame = tk.Frame(self.root, bg="#1F2937", width=200)
+        self.sidebar_frame.pack(side="left", fill="y")
+        self.topbar_frame = tk.Frame(self.root, bg="#111827", height=56)
+        self.topbar_frame.pack(side="top", fill="x")
+        self.content_frame = tk.Frame(self.root, bg="#F5F6FA")
+        self.content_frame.pack(side="right", fill="both", expand=True)
+        self.sidebar_buttons = {}
+        nav_items = [
+            ("Dashboard", self.show_dashboard),
+            ("Inventory", self.show_inventory),
+            ("Sales", self.show_sales),
+            ("Reports", self.show_reports),
+            ("HR", self.show_hr),
+            ("Settings", self.show_settings),
+        ]
+        for idx, (label, command) in enumerate(nav_items):
+            btn = ttk.Button(self.sidebar_frame, text=label, style="Sidebar.TButton", command=command)
+            btn.pack(fill="x", pady=2, padx=8)
+            self.sidebar_buttons[label] = btn
+        self.app_title_label = tk.Label(self.topbar_frame, text="BizHub", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 18, "bold"))
+        self.app_title_label.pack(side="left", padx=20)
+        self.user_info_label = tk.Label(self.topbar_frame, text="User: Guest", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 12))
+        self.user_info_label.pack(side="right", padx=20)
+        print("[DEBUG] Calling show_login_screen from __init__")
+        self.show_login_screen()
         # Session state
         self.current_user = None
         self.current_role = None
@@ -314,6 +333,56 @@ class BizHubDesktopApp:
         for widget in self.root.winfo_children():
             widget.destroy()
     
+    def show_inventory(self):
+        print("[DEBUG] Entered show_inventory (Supabase)")
+        self.clear_content()
+        self.apply_theme()
+        self.content_frame.configure(bg=self.colors["bg"])
+
+        # Inventory header
+        header = tk.Frame(self.content_frame, bg=self.colors["bg"])
+        header.pack(fill="x", pady=(0, 8))
+        tk.Label(header, text="Inventory", font=("Segoe UI", 18, "bold"), fg=self.colors["primary"], bg=self.colors["bg"]).pack(side="left", padx=8)
+
+        # Inventory table
+        table_frame = tk.Frame(self.content_frame, bg=self.colors["bg"])
+        table_frame.pack(fill="both", expand=True, padx=8, pady=8)
+        columns = ("ID", "Name", "Qty", "Threshold", "Cost", "Sale", "Desc", "Image")
+        tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=18)
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=100, anchor="center")
+        tree.pack(fill="both", expand=True)
+
+        # Fetch inventory from Supabase
+        try:
+            response = self.supabase.fetch_inventory()
+            if hasattr(response, 'data'):
+                inventory = response.data
+            else:
+                inventory = response
+            for item in inventory:
+                row = (
+                    item.get('id', ''),
+                    item.get('name', ''),
+                    item.get('qty', ''),
+                    item.get('threshold', ''),
+                    item.get('cost', ''),
+                    item.get('sale', ''),
+                    item.get('desc', ''),
+                    item.get('image', ''),
+                )
+                tree.insert("", "end", values=row)
+        except Exception as e:
+            print(f"[ERROR] Supabase inventory fetch failed: {e}")
+
+        # Add/Update/Delete buttons (placeholder)
+        btn_row = tk.Frame(self.content_frame, bg=self.colors["bg"])
+        btn_row.pack(fill="x", pady=(8, 0))
+        ttk.Button(btn_row, text="Add Item", style="Primary.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(btn_row, text="Update Item", style="Success.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(btn_row, text="Delete Item", style="Danger.TButton").pack(side="left")
+
     def show_login_screen(self):
         print("[DEBUG] Entered show_login_screen")
         self.root.geometry("520x520")
@@ -339,9 +408,9 @@ class BizHubDesktopApp:
 
         form = tk.Frame(card, bg=self.colors["card"])
         form.pack(fill="x")
-        tk.Label(form, text="Username", bg=self.colors["card"], fg=self.colors["muted"], anchor="w", font=("Segoe UI", 10)).pack(fill="x", pady=(0, 2))
-        username_entry = ttk.Entry(form)
-        username_entry.pack(fill="x", pady=(0, 8))
+        tk.Label(form, text="Email", bg=self.colors["card"], fg=self.colors["muted"], anchor="w", font=("Segoe UI", 10)).pack(fill="x", pady=(0, 2))
+        email_entry = ttk.Entry(form)
+        email_entry.pack(fill="x", pady=(0, 8))
         tk.Label(form, text="Password", bg=self.colors["card"], fg=self.colors["muted"], anchor="w", font=("Segoe UI", 10)).pack(fill="x", pady=(0, 2))
         password_entry = ttk.Entry(form, show="*")
         password_entry.pack(fill="x", pady=(0, 8))
@@ -350,174 +419,53 @@ class BizHubDesktopApp:
         error_label.pack(pady=(4, 0))
 
         def login():
-            username = username_entry.get().strip()
+            email = email_entry.get().strip()
             password = password_entry.get()
-            if not username or not password:
-                error_label.config(text="Username and password required")
+            if not email or not password:
+                error_label.config(text="Email and password required")
                 return
-            if self.auth_service.authenticate(username, password):
-                self.current_user = username
-                self.current_role = self.auth_service.get_user_role(username)
-                self.auth_service.update_last_login(username)
-                self.activity_service.log(username, "Login", f"User logged in")
-                self.root.unbind("<Return>")
-                self.show_main_ui()
-            else:
-                error_label.config(text="Invalid credentials")
+            try:
+                result = self.supabase.sign_in(email, password)
+                user = getattr(result, 'user', None)
+                if user or (hasattr(result, 'data') and result.data):
+                    self.current_user = email
+                    self.current_role = "user"
+                    self.user_info_label.config(text=f"User: {email}")
+                    self.root.unbind("<Return>")
+                    self.show_main_ui()
+                else:
+                    error_label.config(text="Invalid credentials or Supabase error")
+            except Exception as e:
+                error_label.config(text=f"Login error: {e}")
+
+        def signup():
+            email = email_entry.get().strip()
+            password = password_entry.get()
+            if not email or not password:
+                error_label.config(text="Email and password required")
+                return
+            try:
+                result = self.supabase.sign_up(email, password)
+                user = getattr(result, 'user', None)
+                if user or (hasattr(result, 'data') and result.data):
+                    error_label.config(text="Signup successful. Please login.", fg="#10B981")
+                else:
+                    error_label.config(text="Signup failed or user exists.")
+            except Exception as e:
+                error_label.config(text=f"Signup error: {e}")
 
         btn_row = tk.Frame(card, bg=self.colors["card"])
         btn_row.pack(fill="x", pady=(16, 0))
         login_btn = ttk.Button(btn_row, text="Login", command=login, style="Success.TButton")
         login_btn.pack(side="left", expand=True, fill="x", padx=(0, 8))
+        signup_btn = ttk.Button(btn_row, text="Sign Up", command=signup, style="Primary.TButton")
+        signup_btn.pack(side="left", expand=True, fill="x", padx=(0, 8))
         exit_btn = ttk.Button(btn_row, text="Exit", command=self.root.quit, style="Danger.TButton")
         exit_btn.pack(side="left", expand=True, fill="x")
 
         self.root.bind("<Return>", lambda _e: login())
-        username_entry.focus()
-    
-    def show_main_ui(self):
-        """Display main application UI."""
-        self._apply_responsive_geometry()
-        self.clear_root()
-        self.apply_theme()
-
-        # Top Navigation
-        self.top_nav = tk.Frame(self.root, bg=self.colors["nav_bg"], height=56)
-        self.top_nav.pack(fill="x")
-
-        brand_frame = tk.Frame(self.top_nav, bg=self.colors["nav_bg"])
-        brand_frame.pack(side="left", padx=16)
-        tk.Label(brand_frame, text="BzHub", fg=self.colors["primary"], bg=self.colors["nav_bg"],
-                 font=("Arial", 14, "bold")).pack(side="left")
-        tk.Label(brand_frame, text="ERP", fg=self.colors["muted"], bg=self.colors["nav_bg"],
-                 font=("Arial", 10)).pack(side="left", padx=(8, 0))
-
-        nav_frame = tk.Frame(self.top_nav, bg=self.colors["nav_bg"])
-        nav_frame.pack(side="left", padx=24)
-
-        self.nav_buttons = {}
-        self.nav_button_texts = {}
-        nav_items = [
-            ("Dashboard", "Dashboard", "View analytics and KPIs"),
-            ("CRM", "CRM", "Customer Relationship Management"),
-            ("HR", "HR", "Human Resources"),
-            ("Settings", "Settings", "App configuration and preferences")
-        ]
-        for base_name, text, tooltip in nav_items:
-            if base_name in {"Dashboard", "Reports", "HR", "Settings"} and self.current_role != "admin":
-                continue
-            btn = ttk.Button(
-                nav_frame,
-                text=text,
-                style="Nav.TButton",
-                command=lambda n=base_name: self.select_tab(n)
-            )
-            btn.pack(side="left", padx=4)
-            self.nav_buttons[base_name] = btn
-            self.nav_button_texts[base_name] = text
-            # Add tooltip
-            def add_tooltip(widget, text):
-                tooltip = tk.Toplevel(widget)
-                tooltip.withdraw()
-                tooltip.overrideredirect(True)
-                label = tk.Label(tooltip, text=text, bg="#222", fg="#fff", font=("Segoe UI", 9), padx=8, pady=4)
-                label.pack()
-                def show_tip(event):
-                    x = event.x_root + 10
-                    y = event.y_root + 10
-                    tooltip.geometry(f"+{x}+{y}")
-                    tooltip.deiconify()
-                def hide_tip(_):
-                    tooltip.withdraw()
-                widget.bind("<Enter>", show_tip)
-                widget.bind("<Leave>", hide_tip)
-            add_tooltip(btn, tooltip)
-        # Always recreate color scheme selector and menu
-        self.color_scheme_selector = tk.StringVar(value=self.color_scheme)
-        def on_scheme_change(*_):
-            self.color_scheme = self.color_scheme_selector.get()
-            self.apply_theme()
-            self.show_main_ui()
-        scheme_menu = ttk.OptionMenu(
-            self.top_nav,
-            self.color_scheme_selector,
-            self.color_scheme,
-            "light", "dark", "vivid",
-            command=lambda _: on_scheme_change()
-        )
-        scheme_menu.pack(side="right", padx=8)
-        scheme_menu.configure(style="Info.TButton")
-
-        right_frame = tk.Frame(self.top_nav, bg=self.colors["nav_bg"])
-        right_frame.pack(side="right", padx=16)
-        self.right_frame = right_frame
-
-        self.help_btn = ttk.Button(right_frame, text="Help", command=self.open_help, style="Info.TButton")
-        self.help_btn.pack(side="left", padx=8)
-        self.dark_mode_toggle = ttk.Checkbutton(
-            right_frame,
-            text="Dark Mode",
-            variable=self.dark_mode,
-            command=self.toggle_dark_mode,
-        )
-        self.dark_mode_toggle.pack(side="left", padx=12)
-        self.user_label = ttk.Label(right_frame, text=f"{self.current_user}", style="TLabel")
-        self.user_label.pack(side="left", padx=8)
-        self.logout_btn = ttk.Button(right_frame, text="Logout", command=self.logout, style="Danger.TButton")
-        self.logout_btn.pack(side="left")
-
-        # Main layout
-        main_layout = tk.Frame(self.root, bg=self.colors["bg"])
-        main_layout.pack(fill="both", expand=True)
-
-        # Sidebar
-        self.sidebar = tk.Frame(main_layout, bg=self.colors["sidebar_bg"], width=220)
-        self.sidebar.pack(side="left", fill="y")
-        self.sidebar.pack_propagate(False)
-
-        self.sidebar_title_label = tk.Label(
-            self.sidebar,
-            text="Quick Actions",
-            fg=self.colors["text"],
-            bg=self.colors["sidebar_bg"],
-            font=("Arial", 10, "bold"),
-        )
-        self.sidebar_title_label.pack(anchor="w", padx=12, pady=(12, 8))
-        self.quick_actions_container = tk.Frame(self.sidebar, bg=self.colors["sidebar_bg"])
-        self.quick_actions_container.pack(fill="x")
-        self.render_quick_actions()
-
-        self.manage_actions_btn = ttk.Button(
-            self.sidebar,
-            text="⚙️ Manage Actions",
-            style="Sidebar.TButton",
-            command=self.open_quick_actions_manager,
-        )
-        self.manage_actions_btn.pack(fill="x", padx=10, pady=(10, 4))
-
-        # Content area
-        content = tk.Frame(main_layout, bg=self.colors["bg"])
-        content.pack(side="left", fill="both", expand=True, padx=12, pady=12)
-
-        # Main notebook (tabs hidden)
-        self.notebook = ttk.Notebook(content, style="App.TNotebook")
-        self.notebook.pack(fill="both", expand=True)
-
-        # Tabs based on role
-        self.tab_index = {}
-        if self.current_role == "admin":
-            self.create_dashboard_tab()
-        self.create_crm_tab()
-        if self.current_role == "admin":
-            self.create_hr_tab()
-            self.create_settings_tab()
-
-        # Default selection
-        self.select_tab("Dashboard" if self.current_role == "admin" else "Inventory")
-        self._apply_sidebar_responsive()
-        self._apply_top_nav_responsive()
-        self.root.bind("<F1>", lambda _e: self.open_help())
-        self.root.bind("<Configure>", self._on_root_resize, add="+")
+        email_entry.focus()
+        # (Login screen does not create tabs, select_tab, or bind F1/Configure for main UI)
 
     def _on_root_resize(self, event):
         """Handle root resize events for responsive layout behavior."""

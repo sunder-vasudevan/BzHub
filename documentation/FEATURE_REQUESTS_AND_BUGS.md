@@ -158,6 +158,13 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 ### FEAT-007 — Supplier management
 - **Status:** Planned
 - **Priority:** Medium
+
+### FEAT-008 — Authentication/User Management Model Review
+- **Status:** Planned
+- **Priority:** High
+- **Target Phase:** Supabase Integration / User Management
+- **Work Started:** 2026-02-16
+- **Description:** Re-evaluate the authentication and user management approach for BizHub. Current Supabase model requires email-based sign-up and confirmation, which may not fit all use cases (e.g., admin-driven user creation, non-email users, or custom login flows). Consider supporting admin login, custom user management, or alternative authentication flows if Supabase's default is too restrictive.
 - **Target Phase:** Product Features
 
 ### FEAT-008 — Advanced reporting
@@ -246,6 +253,12 @@ Single source of truth for new feature requests, bugs, and follow-up items.
     - No data sharing with Ideaboard app required.
     - Focus on secure, reliable, and scalable setup for 2–3 desktop users.
     - To be implemented after UI refactor is complete.
+
+### FEAT-SUPABASE — Complete Supabase Migration
+- **Status:** Planned
+- **Date:** 2026-02-18
+- **Owner:** Copilot
+- **Summary:** Migrate all remaining business logic (sales, HR, payroll, appraisals, analytics, etc.) to SupabaseService. Refactor/remove legacy service usages for these modules. Ensure all CRUD and reporting operations use Supabase. Test multi-user, multi-desktop scenarios for all modules.
 
 ---
 
