@@ -225,6 +225,28 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Priority:** Medium
 - **Target Phase:** Cloud Deployment
 
+### FEAT-NEW — Web Compatibility and Central Database
+- **Status:** Open
+- **Date:** 2026-02-18
+- **Area:** Architecture/Deployment
+- **Summary:**
+    1. Refactor UI and business logic for future web compatibility (fonts, UI, and flow should be easily portable to a web stack).
+    2. Implement a central/shared database (e.g., PostgreSQL, MySQL, or cloud DB) to allow multiple desktop users to access and update data concurrently from different machines.
+- **Notes:**
+    - For now, focus is on desktop improvements.
+    - Central database will require network configuration, user authentication, and possible migration from local SQLite.
+    - Web compatibility will be planned after desktop refactor is stable.
+
+### FEAT-NEW — Supabase Integration for BizHub
+- **Status:** Planned
+- **Date:** 2026-02-18
+- **Area:** Database/Cloud
+- **Summary:** Integrate BizHub desktop app with Supabase (PostgreSQL) for central, cloud-based data storage and multi-user access. Migrate from local SQLite to Supabase, update database adapters, and provide configuration for connection credentials.
+- **Notes:**co
+    - No data sharing with Ideaboard app required.
+    - Focus on secure, reliable, and scalable setup for 2–3 desktop users.
+    - To be implemented after UI refactor is complete.
+
 ---
 
 ## In Progress

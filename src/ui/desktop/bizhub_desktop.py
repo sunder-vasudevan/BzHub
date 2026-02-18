@@ -33,9 +33,36 @@ from src.core import CurrencyFormatter, HRCalculator
 
 
 class BizHubDesktopApp:
+    def show_dashboard(self):
+        self._show_placeholder("Dashboard")
+
+    def show_inventory(self):
+        self._show_placeholder("Inventory")
+
+    def show_sales(self):
+        self._show_placeholder("Sales")
+
+    def show_reports(self):
+        self._show_placeholder("Reports")
+
+    def show_hr(self):
+        self._show_placeholder("HR")
+
+    def show_settings(self):
+        self._show_placeholder("Settings")
+
+    def _show_placeholder(self, section_name):
+        """Show a placeholder card in the content area for the given section."""
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+        card = tk.Frame(self.content_frame, bg="#FFFFFF", padx=40, pady=40)
+        card.pack(expand=True)
+        label = tk.Label(card, text=f"{section_name} (Coming Soon)", font=("Segoe UI", 20, "bold"), fg="#6D28D9", bg="#FFFFFF")
+        label.pack()
     """Main BizHub desktop application using Tkinter."""
 
     def __init__(self, root, db_file="inventory.db"):
+        self.color_scheme = "light"  # Options: light, dark, vivid
         print("[DEBUG] Entered BizHubDesktopApp.__init__")
         self.dark_mode = tk.BooleanVar(value=False)
         self.root = root
@@ -92,12 +119,41 @@ class BizHubDesktopApp:
         self.pos_qty_var = tk.StringVar(value="1")
         self.pos_qty_entry = tk.Entry(self.root, textvariable=self.pos_qty_var)
 
-        # Sidebar state
-
+        # Sidebar and topbar state
         self._sidebar_compact = False
         self._topnav_compact = False
 
-        # Show login screen on startup
+        # --- Modern UI Layout ---
+        # Main layout: sidebar (left), topbar (top), content (center)
+        self.sidebar_frame = tk.Frame(self.root, bg="#1F2937", width=200)
+        self.sidebar_frame.pack(side="left", fill="y")
+        self.topbar_frame = tk.Frame(self.root, bg="#111827", height=56)
+        self.topbar_frame.pack(side="top", fill="x")
+        self.content_frame = tk.Frame(self.root, bg="#F5F6FA")
+        self.content_frame.pack(side="right", fill="both", expand=True)
+
+        # Sidebar navigation buttons (placeholder, will update with icons and sections)
+        self.sidebar_buttons = {}
+        nav_items = [
+            ("Dashboard", self.show_dashboard),
+            ("Inventory", self.show_inventory),
+            ("Sales", self.show_sales),
+            ("Reports", self.show_reports),
+            ("HR", self.show_hr),
+            ("Settings", self.show_settings),
+        ]
+        for idx, (label, command) in enumerate(nav_items):
+            btn = ttk.Button(self.sidebar_frame, text=label, style="Sidebar.TButton", command=command)
+            btn.pack(fill="x", pady=2, padx=8)
+            self.sidebar_buttons[label] = btn
+
+        # Topbar: app title and user info (placeholder)
+        self.app_title_label = tk.Label(self.topbar_frame, text="BizHub", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 18, "bold"))
+        self.app_title_label.pack(side="left", padx=20)
+        self.user_info_label = tk.Label(self.topbar_frame, text="User: Guest", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 12))
+        self.user_info_label.pack(side="right", padx=20)
+
+        # Show login screen on startup (in content_frame)
         print("[DEBUG] Calling show_login_screen from __init__")
         self.show_login_screen()
 
@@ -182,7 +238,25 @@ class BizHubDesktopApp:
             "sidebar_bg": "#0F172A",
             "border": "#1F2937",
         }
-        self.colors = dark if self.dark_mode.get() else light
+        vivid = {
+            "bg": "#FFF7ED",
+            "card": "#FFFBF0",
+            "text": "#1E293B",
+            "muted": "#FB923C",
+            "primary": "#F97316",
+            "accent": "#10B981",
+            "nav_bg": "#FDBA74",
+            "sidebar_bg": "#FDE68A",
+            "border": "#F59E42",
+        }
+        scheme = getattr(self, "color_scheme", "light")
+        if scheme == "dark":
+            self.colors = dark
+        elif scheme == "vivid":
+            self.colors = vivid
+        else:
+            self.colors = light
+    # ...existing code...
 
         style = ttk.Style(self.root)
         try:
@@ -242,37 +316,44 @@ class BizHubDesktopApp:
     
     def show_login_screen(self):
         print("[DEBUG] Entered show_login_screen")
-        """Display login screen."""
         self.root.geometry("520x520")
-        print("[DEBUG] geometry set")
         self.root.minsize(520, 520)
-        print("[DEBUG] minsize set")
-        # self.clear_root()
-        print("[DEBUG] clear_root skipped")
-        # self.apply_theme()
-        print("[DEBUG] apply_theme skipped")
-        self.root.configure(bg="#FFEE99")
-        print("[DEBUG] bg set")
-        label = tk.Label(self.root, text="BizHub Login", font=("Arial", 16, "bold"), bg="#FFEE99", fg="#222")
-        label.pack(pady=20)
-        print("[DEBUG] label packed")
-        user_label = tk.Label(self.root, text="Username:", bg="#FFEE99")
-        user_label.pack()
-        print("[DEBUG] user_label packed")
-        username_entry = tk.Entry(self.root)
-        username_entry.pack(pady=5)
-        print("[DEBUG] username_entry packed")
-        pass_label = tk.Label(self.root, text="Password:", bg="#FFEE99")
-        pass_label.pack()
-        print("[DEBUG] pass_label packed")
-        password_entry = tk.Entry(self.root, show="*")
-        password_entry.pack(pady=5)
-        print("[DEBUG] password_entry packed")
+        self.clear_root()
+        self.apply_theme()
+        self.root.configure(bg=self.colors["bg"])
+
+        # Centered card layout
+        card = tk.Frame(self.root, bg=self.colors["card"], padx=32, pady=32)
+        card.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Logo
+        logo_img = self._load_login_logo() if hasattr(self, '_load_login_logo') else None
+        if logo_img:
+            logo_label = tk.Label(card, image=logo_img, bg=self.colors["card"])
+            logo_label.image = logo_img
+            logo_label.pack(pady=(0, 16))
+        else:
+            tk.Label(card, text="BzHub", font=("Segoe UI", 24, "bold"), fg=self.colors["primary"], bg=self.colors["card"]).pack(pady=(0, 16))
+
+        tk.Label(card, text="Login", font=("Segoe UI", 16, "bold"), fg=self.colors["text"], bg=self.colors["card"]).pack(pady=(0, 12))
+
+        form = tk.Frame(card, bg=self.colors["card"])
+        form.pack(fill="x")
+        tk.Label(form, text="Username", bg=self.colors["card"], fg=self.colors["muted"], anchor="w", font=("Segoe UI", 10)).pack(fill="x", pady=(0, 2))
+        username_entry = ttk.Entry(form)
+        username_entry.pack(fill="x", pady=(0, 8))
+        tk.Label(form, text="Password", bg=self.colors["card"], fg=self.colors["muted"], anchor="w", font=("Segoe UI", 10)).pack(fill="x", pady=(0, 2))
+        password_entry = ttk.Entry(form, show="*")
+        password_entry.pack(fill="x", pady=(0, 8))
+
+        error_label = tk.Label(card, text="", bg=self.colors["card"], fg="#EF4444", font=("Segoe UI", 10))
+        error_label.pack(pady=(4, 0))
+
         def login():
             username = username_entry.get().strip()
             password = password_entry.get()
             if not username or not password:
-                messagebox.showerror("Error", "Username and password required")
+                error_label.config(text="Username and password required")
                 return
             if self.auth_service.authenticate(username, password):
                 self.current_user = username
@@ -282,17 +363,17 @@ class BizHubDesktopApp:
                 self.root.unbind("<Return>")
                 self.show_main_ui()
             else:
-                messagebox.showerror("Login Failed", "Invalid credentials")
-        login_btn = tk.Button(self.root, text="Login", command=login, bg="#6D28D9", fg="white", font=("Arial", 12, "bold"))
-        login_btn.pack(pady=10)
-        print("[DEBUG] login_btn packed")
-        exit_btn = tk.Button(self.root, text="Exit", command=self.root.quit, bg="#EF4444", fg="white")
-        exit_btn.pack()
-        print("[DEBUG] exit_btn packed")
+                error_label.config(text="Invalid credentials")
+
+        btn_row = tk.Frame(card, bg=self.colors["card"])
+        btn_row.pack(fill="x", pady=(16, 0))
+        login_btn = ttk.Button(btn_row, text="Login", command=login, style="Success.TButton")
+        login_btn.pack(side="left", expand=True, fill="x", padx=(0, 8))
+        exit_btn = ttk.Button(btn_row, text="Exit", command=self.root.quit, style="Danger.TButton")
+        exit_btn.pack(side="left", expand=True, fill="x")
+
         self.root.bind("<Return>", lambda _e: login())
-        print("[DEBUG] bind set")
         username_entry.focus()
-        print("[DEBUG] focus set")
     
     def show_main_ui(self):
         """Display main application UI."""
@@ -316,16 +397,56 @@ class BizHubDesktopApp:
 
         self.nav_buttons = {}
         self.nav_button_texts = {}
-        nav_items = ["📊 Dashboard", "📇 CRM", "👔 HR", "⚙️ Settings"]
-        for name in nav_items:
-            base_name = name.split(" ", 1)[1]
+        nav_items = [
+            ("Dashboard", "Dashboard", "View analytics and KPIs"),
+            ("CRM", "CRM", "Customer Relationship Management"),
+            ("HR", "HR", "Human Resources"),
+            ("Settings", "Settings", "App configuration and preferences")
+        ]
+        for base_name, text, tooltip in nav_items:
             if base_name in {"Dashboard", "Reports", "HR", "Settings"} and self.current_role != "admin":
                 continue
-            btn = ttk.Button(nav_frame, text=name, style="Nav.TButton",
-                             command=lambda n=base_name: self.select_tab(n))
+            btn = ttk.Button(
+                nav_frame,
+                text=text,
+                style="Nav.TButton",
+                command=lambda n=base_name: self.select_tab(n)
+            )
             btn.pack(side="left", padx=4)
             self.nav_buttons[base_name] = btn
-            self.nav_button_texts[base_name] = name
+            self.nav_button_texts[base_name] = text
+            # Add tooltip
+            def add_tooltip(widget, text):
+                tooltip = tk.Toplevel(widget)
+                tooltip.withdraw()
+                tooltip.overrideredirect(True)
+                label = tk.Label(tooltip, text=text, bg="#222", fg="#fff", font=("Segoe UI", 9), padx=8, pady=4)
+                label.pack()
+                def show_tip(event):
+                    x = event.x_root + 10
+                    y = event.y_root + 10
+                    tooltip.geometry(f"+{x}+{y}")
+                    tooltip.deiconify()
+                def hide_tip(_):
+                    tooltip.withdraw()
+                widget.bind("<Enter>", show_tip)
+                widget.bind("<Leave>", hide_tip)
+            add_tooltip(btn, tooltip)
+        # Always recreate color scheme selector and menu
+        self.color_scheme_selector = tk.StringVar(value=self.color_scheme)
+        def on_scheme_change(*_):
+            self.color_scheme = self.color_scheme_selector.get()
+            self.apply_theme()
+            self.show_main_ui()
+        scheme_menu = ttk.OptionMenu(
+            self.top_nav,
+            self.color_scheme_selector,
+            self.color_scheme,
+            "light", "dark", "vivid",
+            command=lambda _: on_scheme_change()
+        )
+        scheme_menu.pack(side="right", padx=8)
+        scheme_menu.configure(style="Info.TButton")
 
         right_frame = tk.Frame(self.top_nav, bg=self.colors["nav_bg"])
         right_frame.pack(side="right", padx=16)

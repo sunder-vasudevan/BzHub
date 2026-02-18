@@ -1,0 +1,28 @@
+
+=== UI Navigation Error ===
+Tab: Dashboard
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 825, in select_tab
+    if name in self.tab_index:
+AttributeError: 'BizHubDesktopApp' object has no attribute 'tab_index'
+
+=== UI Navigation Error ===
+Tab: Dashboard
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 825, in select_tab
+    if name in self.tab_index:
+AttributeError: 'BizHubDesktopApp' object has no attribute 'tab_index'
+
+=== UI Navigation Error ===
+Tab: CRM
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 826, in select_tab
+    if name in self.tab_index:
+AttributeError: 'BizHubDesktopApp' object has no attribute 'tab_index'
+
+=== UI Navigation Error ===
+Tab: Dashboard
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 825, in select_tab
+    if name in self.tab_index:
+AttributeError: 'BizHubDesktopApp' object has no attribute 'tab_index'
