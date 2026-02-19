@@ -42,19 +42,52 @@ class BizHubDesktopApp:
         self.apply_theme()
         self.root.geometry("1200x800")
         self.root.minsize(900, 600)
-        # Re-create sidebar, topbar, and content_frame
+        # Sidebar
         self.sidebar_frame = tk.Frame(self.root, bg="#1F2937", width=200)
         self.sidebar_frame.pack(side="left", fill="y")
+        print("[DEBUG] sidebar_frame created:", self.sidebar_frame)
+        # Topbar
         self.topbar_frame = tk.Frame(self.root, bg="#111827", height=56)
         self.topbar_frame.pack(side="top", fill="x")
+        print("[DEBUG] topbar_frame created:", self.topbar_frame)
+        # Content frame
         self.content_frame = tk.Frame(self.root, bg="#F5F6FA")
         self.content_frame.pack(side="right", fill="both", expand=True)
+        print("[DEBUG] content_frame created:", self.content_frame)
+        # App title and user info
         self.app_title_label = tk.Label(self.topbar_frame, text="BizHub", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 18, "bold"))
         self.app_title_label.pack(side="left", padx=20)
         self.user_info_label = tk.Label(self.topbar_frame, text=f"User: {self.current_user}", fg="#F9FAFB", bg="#111827", font=("Segoe UI", 12))
         self.user_info_label.pack(side="right", padx=20)
-        # Show dashboard or placeholder
-        self.show_dashboard()
+        print("[DEBUG] user_info_label created:", self.user_info_label)
+        # Main notebook for tabs
+        self.notebook = ttk.Notebook(self.content_frame)
+        self.notebook.pack(fill="both", expand=True)
+        self.tab_index = {}
+        # Add all main modules as tabs
+        self.create_dashboard_tab()
+        self.create_inventory_tab()
+        self.create_pos_tab()
+        self.create_reports_tab()
+        self.create_hr_tab()
+        self.create_visitors_tab()
+        # Sidebar navigation buttons
+        self.sidebar_buttons = {}
+        nav_items = [
+            ("Dashboard", lambda: self.select_tab("Dashboard")),
+            ("Inventory", lambda: self.select_tab("Inventory")),
+            ("Sales", lambda: self.select_tab("POS")),
+            ("Reports", lambda: self.select_tab("Reports")),
+            ("HR", lambda: self.select_tab("HR")),
+            ("Visitors", lambda: self.select_tab("Visitors")),
+        ]
+        for idx, (label, command) in enumerate(nav_items):
+            btn = ttk.Button(self.sidebar_frame, text=label, style="Sidebar.TButton", command=command)
+            btn.pack(fill="x", pady=2, padx=8)
+            self.sidebar_buttons[label] = btn
+        print("[DEBUG] sidebar buttons:", list(self.sidebar_buttons.keys()))
+        # Select dashboard tab by default
+        self.select_tab("Dashboard")
     def show_dashboard(self):
         self._show_placeholder("Dashboard")
 
@@ -90,6 +123,19 @@ class BizHubDesktopApp:
         self.root = root
         self.root.title("BzHub - Complete ERP Suite")
         self.root.geometry("1200x800")
+        # --- Service initializations (must come before UI logic) ---
+        self.db_file = db_file
+        self.db_adapter = SQLiteAdapter(self.db_file)
+        self.analytics_service = AnalyticsService(self.db_adapter)
+        self.inventory_service = InventoryService(self.db_adapter)
+        self.pos_service = POSService(self.db_adapter)
+        self.hr_service = HRService(self.db_adapter)
+        self.visitor_service = VisitorService(self.db_adapter)
+        self.email_service = EmailService(self.db_adapter)
+        self.activity_service = ActivityService(self.db_adapter)
+        self.company_service = CompanyService(self.db_adapter)
+        self.payroll_service = PayrollService(self.db_adapter)
+        self.appraisal_service = AppraisalService(self.db_adapter)
         # Initialize Supabase for multi-user, multi-desktop
         self.supabase = SupabaseService(SUPABASE_URL, SUPABASE_KEY)
         print("[DEBUG] SupabaseService initialized")
@@ -450,13 +496,22 @@ class BizHubDesktopApp:
                 if user or (hasattr(result, 'data') and result.data):
                     self.current_user = email
                     self.current_role = "user"
-                    self.user_info_label.config(text=f"User: {email}")
                     self.root.unbind("<Return>")
                     self.show_main_ui()
+                    # Update user_info_label after UI is rebuilt
+                    if hasattr(self, 'user_info_label'):
+                        self.user_info_label.config(text=f"User: {email}")
                 else:
                     error_label.config(text="Invalid credentials or Supabase error")
             except Exception as e:
                 error_label.config(text=f"Login error: {e}")
+    # --- CLEAN WORKFLOW SUGGESTION ---
+    # 1. Use git branches for experiments and debugging.
+    # 2. Add debug print or messagebox statements for widget creation and key actions.
+    # 3. After major changes, commit working code before further edits.
+    # 4. When switching screens, always re-create widgets and avoid referencing destroyed ones.
+    # 5. Use clear_root() to reset UI, then rebuild all widgets as needed.
+    # 6. Remove debug prints before production release.
 
         def signup():
             email = email_entry.get().strip()
