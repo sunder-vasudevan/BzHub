@@ -33,3 +33,30 @@ Traceback (most recent call last):
   File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 783, in select_tab
     if name in self.tab_index:
 AttributeError: 'BizHubDesktopApp' object has no attribute 'tab_index'
+
+=== UI Navigation Error ===
+Tab: Visitors
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 880, in select_tab
+    self.notebook.select(self.tab_index[name])
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/tkinter/ttk.py", line 885, in select
+    return self.tk.call(self._w, "select", tab_id)
+_tkinter.TclError: invalid command name ".!frame10.!notebook"
+
+=== UI Navigation Error ===
+Tab: POS
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 880, in select_tab
+    self.notebook.select(self.tab_index[name])
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/tkinter/ttk.py", line 885, in select
+    return self.tk.call(self._w, "select", tab_id)
+_tkinter.TclError: invalid command name ".!frame10.!notebook"
+
+=== UI Navigation Error ===
+Tab: Dashboard
+Traceback (most recent call last):
+  File "/Users/scottvalentino/C_Love_Coding/src/ui/desktop/bizhub_desktop.py", line 880, in select_tab
+    self.notebook.select(self.tab_index[name])
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/tkinter/ttk.py", line 885, in select
+    return self.tk.call(self._w, "select", tab_id)
+_tkinter.TclError: invalid command name ".!frame10.!notebook"

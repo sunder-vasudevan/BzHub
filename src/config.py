@@ -30,7 +30,7 @@ ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin123'
 
 # Application settings
-APP_NAME = 'BzHub'
+APP_NAME = 'Bzhub'
 APP_VERSION = '1.0.0'
 
 def get_db_config():

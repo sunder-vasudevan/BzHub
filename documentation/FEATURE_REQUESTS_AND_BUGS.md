@@ -14,7 +14,7 @@
   - Prevents bugs where destroyed widgets are accessed, which break stable features when new features are added.
   - Makes the app more robust and maintainable as it grows.
 - **Reference:** See recent bug with sidebar/tab switching and notebook destruction.
-# BizHub Feature Requests & Bug Tracker
+# Bzhub Feature Requests & Bug Tracker
 
 Single source of truth for new feature requests, bugs, and follow-up items.
 
@@ -57,7 +57,7 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Date:** 2026-02-16
 - **Area:** Architecture/Maintainability
 - **Priority:** High
-- **Summary:** Refactor the BizHub app to improve maintainability, modularity, and scalability. Adopt a clearer separation of concerns, improve error handling, and make it easier to add new features.
+- **Summary:** Refactor the Bzhub app to improve maintainability, modularity, and scalability. Adopt a clearer separation of concerns, improve error handling, and make it easier to add new features.
 - **Rationale:**
   - Current codebase is monolithic in places, with UI and business logic mixed.
   - Refactoring will make the app easier to maintain, test, and extend.
@@ -180,7 +180,7 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Priority:** High
 - **Target Phase:** Supabase Integration / User Management
 - **Work Started:** 2026-02-16
-- **Description:** Re-evaluate the authentication and user management approach for BizHub. Current Supabase model requires email-based sign-up and confirmation, which may not fit all use cases (e.g., admin-driven user creation, non-email users, or custom login flows). Consider supporting admin login, custom user management, or alternative authentication flows if Supabase's default is too restrictive.
+- **Description:** Re-evaluate the authentication and user management approach for Bzhub. Current Supabase model requires email-based sign-up and confirmation, which may not fit all use cases (e.g., admin-driven user creation, non-email users, or custom login flows). Consider supporting admin login, custom user management, or alternative authentication flows if Supabase's default is too restrictive.
 - **Target Phase:** Product Features
 
 ### FEAT-008 — Advanced reporting
@@ -260,11 +260,11 @@ Single source of truth for new feature requests, bugs, and follow-up items.
     - Central database will require network configuration, user authentication, and possible migration from local SQLite.
     - Web compatibility will be planned after desktop refactor is stable.
 
-### FEAT-NEW — Supabase Integration for BizHub
+### FEAT-NEW — Supabase Integration for Bzhub
 - **Status:** Planned
 - **Date:** 2026-02-18
 - **Area:** Database/Cloud
-- **Summary:** Integrate BizHub desktop app with Supabase (PostgreSQL) for central, cloud-based data storage and multi-user access. Migrate from local SQLite to Supabase, update database adapters, and provide configuration for connection credentials.
+- **Summary:** Integrate Bzhub desktop app with Supabase (PostgreSQL) for central, cloud-based data storage and multi-user access. Migrate from local SQLite to Supabase, update database adapters, and provide configuration for connection credentials.
 - **Notes:**co
     - No data sharing with Ideaboard app required.
     - Focus on secure, reliable, and scalable setup for 2–3 desktop users.
@@ -506,7 +506,7 @@ You write your UI in HTML/CSS/JS (full modern web stack — Tailwind, animations
 ```python
 import webview
 
-webview.create_window("BizHub", "frontend/index.html", js_api=my_api)
+webview.create_window("Bzhub", "frontend/index.html", js_api=my_api)
 webview.start()
 ```
 
@@ -808,3 +808,14 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 - Track progress using this roadmap and update as features are completed
 
 ---
+
+### FEAT-PR-AUTO — Automate PR Creation
+- **Status:** Open
+- **Priority:** Medium
+- **Summary:** Add a script and workflow to automate the creation of GitHub pull requests after pushing a branch, reducing manual steps and ensuring consistent PR metadata.
+- **Rationale:** Streamlines the development workflow, reduces errors, and saves time for contributors.
+- **Implementation:**
+  1. Provide a shell script (create_pr.sh) that pushes the current branch and opens a PR to the dev branch using GitHub CLI.
+  2. Document usage examples in the README or developer guide.
+  3. Optionally, extend with auto-labeling or auto-merge features via GitHub Actions.
+- **Owner:** Copilot

@@ -1,10 +1,17 @@
-# Python
+# Ignore log files and folders
+logs/
+
+# VS Code workspace files
+*.code-workspace
+
+# Python cache
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-.pytest_cache/
+
+# SQLite and other database files
+*.db
+
+# Environment files
+.env
 
 # Virtual environments
 .venv/

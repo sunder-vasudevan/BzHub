@@ -1,0 +1,43 @@
+# Example GitHub Actions workflow for auto-labeling PRs and generating changelogs
+
+name: PR Automation & Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  auto-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label PRs based on title
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+  changelog:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Generate changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: .github/changelog-configuration.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# To enable auto-labeling, create a .github/labeler.yml file with rules, e.g.:
+# feature:
+#   - 'src/**'
+# bug:
+#   - 'tests/**'
+# enhancement:
+#   - 'scripts/**'
+
+# To customize changelog, create .github/changelog-configuration.json (see docs)

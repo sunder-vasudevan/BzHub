@@ -1,0 +1,24 @@
+feature:
+  - 'src/**'
+  - 'scripts/**'
+  - 'bizhub.py'
+  - 'bizhub.spec'
+  - 'resume_customizer_app/**'
+  - 'api/**'
+  - 'bzhub_web/**'
+  - 'ideaboard/**'
+bug:
+  - 'tests/**'
+  - '**/BUGS.md'
+  - '**/test_*.py'
+enhancement:
+  - 'documentation/**'
+  - '*.md'
+  - 'docs/**'
+documentation:
+  - 'README.md'
+  - 'documentation/**'
+  - 'docs/**'
+refactor:
+  - '**/refactor*'
+  - '**/REFACTORING_*.md'

@@ -1,10 +1,10 @@
 from setuptools import setup
 
-APP = ['word_formatter.py']
+APP = ['bizhub.py']
 DATA_FILES = []
 OPTIONS = {
     'argv_emulation': True,
-    'packages': ['docx', 'lxml'],
+    'packages': ['docx', 'lxml', 'tkinter', 'Pillow', 'matplotlib', 'dotenv'],
     'iconfile': None,
 }
 

@@ -1,3 +1,3 @@
-"""BzHub - Complete ERP Suite for Small Businesses"""
+"""Bzhub - Complete ERP Suite for Small Businesses"""
 __version__ = "1.0.0"
-__name__ = "BzHub"
+__name__ = "Bzhub"
