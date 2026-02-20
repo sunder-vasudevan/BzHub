@@ -117,6 +117,11 @@ This library groups reusable prompts by intent (not by chat sequence). Each item
 > **Priority:** Medium
 > **Status:** Planned
 > **Prompt:** “Company info should be restricted with an admin unlock button.”
+> **Intent:** Restrict company info with admin unlock button
+> **Date Added:** 2026-02-18
+> **Priority:** Medium
+> **Status:** Planned
+> **Prompt:** “Company info should be restricted with an admin unlock button.”
 
 ---
 

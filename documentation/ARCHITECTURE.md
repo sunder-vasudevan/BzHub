@@ -1,3 +1,56 @@
+## Lead/Opportunity Module (CRM)
+
+### Overview
+The Lead/Opportunity module is the foundation of the CRM system, inspired by Odoo's best practices. It manages the full lifecycle of sales leads and opportunities, supporting advanced pipeline, scoring, and analytics features.
+
+### Functional Scope
+- Core CRUD for leads/opportunities (create, view, edit, delete, assign, stage tracking)
+- Kanban pipeline for visual sales stage management (drag-and-drop, stage transitions)
+- Lead/opportunity scoring and assignment logic (score calculation, auto-assignment, prioritization)
+- Automated follow-up reminders and scheduled activities
+- Email logging and tracking with CRM contacts and opportunities
+- Lost reason analysis (capture and report on lost opportunities)
+- Custom pipeline stages and tags for opportunities
+- Geo-location/map view for leads/opportunities
+- CRM-specific reporting/dashboard (pipeline metrics, analytics)
+
+### Data Model (Key Fields)
+- id (primary key)
+- name (lead/opportunity title)
+- contact_name, contact_email, contact_phone
+- company
+- stage (e.g., New, Qualified, Proposal, Won, Lost)
+- value (potential deal value)
+- source (website, referral, campaign, etc.)
+- assigned_to (user id)
+- status (active, archived)
+- created_at, updated_at
+- notes (text)
+- tags (for custom pipeline stages/tags)
+- score (for scoring logic)
+
+### Implementation Roadmap
+1. Lead/Opportunity CRUD (core data model and operations)
+2. Kanban pipeline for CRM
+3. Lead/opportunity scoring
+4. Automated follow-ups
+5. Email integration for CRM
+6. Lost reason analysis
+7. Custom stages/tags for CRM
+8. Geo-location for leads/opportunities
+9. CRM-specific reporting/dashboard
+
+### Odoo-Inspired Features
+- Kanban pipeline view for sales stages
+- Lead scoring and auto-assignment
+- Automated follow-ups and activities
+- Email integration and logging
+- Lost reason capture and analytics
+- Customizable pipeline stages/tags
+- Geo-location mapping
+- CRM analytics dashboard
+
+This modular approach allows incremental delivery and testing, with each sub-feature tracked in FEATURES_BUGS_ISSUES.csv for visibility and progress.
 # BizHub - Cloud-Ready ERP Suite Architecture
 
 ## 2026 Web & Cloud Architecture Update

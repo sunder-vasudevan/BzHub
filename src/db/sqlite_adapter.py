@@ -6,6 +6,96 @@ from src.core import PasswordManager
 
 
 class SQLiteAdapter(DatabaseAdapter):
+
+    def list_lead_opportunities(self, filters: dict = None) -> list:
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        try:
+            sql = 'SELECT * FROM leads_opportunities'
+            values = []
+            if filters:
+                clauses = []
+                for k, v in filters.items():
+                    clauses.append(f"{k} = ?")
+                    values.append(v)
+                if clauses:
+                    sql += ' WHERE ' + ' AND '.join(clauses)
+            cursor.execute(sql, values)
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            leads = []
+            for row in rows:
+                lead = dict(zip(columns, row))
+                if lead.get('tags'):
+                    lead['tags'] = lead['tags'].split(',')
+                leads.append(lead)
+            return leads
+        finally:
+            conn.close()
+
+    def delete_lead_opportunity(self, lead_id: int) -> bool:
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        try:
+            cursor.execute('DELETE FROM leads_opportunities WHERE id = ?', (lead_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def update_lead_opportunity(self, lead_id: int, updates: dict) -> bool:
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        try:
+            fields = []
+            values = []
+            for k, v in updates.items():
+                if k == 'tags' and isinstance(v, list):
+                    v = ','.join(v)
+                fields.append(f"{k} = ?")
+                values.append(v)
+            values.append(lead_id)
+            sql = f"UPDATE leads_opportunities SET {', '.join(fields)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+            cursor.execute(sql, values)
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def get_lead_opportunity(self, lead_id: int) -> dict:
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT * FROM leads_opportunities WHERE id = ?', (lead_id,))
+            row = cursor.fetchone()
+            if row:
+                columns = [desc[0] for desc in cursor.description]
+                lead = dict(zip(columns, row))
+                if lead.get('tags'):
+                    lead['tags'] = lead['tags'].split(',')
+                return lead
+            return None
+        finally:
+            conn.close()
+
+        def create_lead_opportunity(self, lead: dict) -> int:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            try:
+                cursor.execute('''
+                    INSERT INTO leads_opportunities
+                    (name, contact_name, contact_email, contact_phone, company, stage, value, source, assigned_to, status, created_at, updated_at, notes, tags, score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    lead['name'], lead.get('contact_name'), lead.get('contact_email'), lead.get('contact_phone'),
+                    lead.get('company'), lead.get('stage', 'New'), lead.get('value', 0), lead.get('source'),
+                    lead.get('assigned_to'), lead.get('status', 'active'), lead.get('created_at'), lead.get('updated_at'),
+                    lead.get('notes'), ','.join(lead.get('tags', [])) if lead.get('tags') else None, lead.get('score')
+                ))
+                conn.commit()
+                return cursor.lastrowid
+            finally:
+                conn.close()
     def create_user(self, username: str, password_hash: str, role: str = 'user'):
         """Create a new user with the specified role."""
         conn = sqlite3.connect(self.db_file)
@@ -231,6 +321,28 @@ class SQLiteAdapter(DatabaseAdapter):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(employee_id) REFERENCES employees(id)
+            )
+        ''')
+
+        # Leads/Opportunities table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS leads_opportunities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                contact_name TEXT,
+                contact_email TEXT,
+                contact_phone TEXT,
+                company TEXT,
+                stage TEXT DEFAULT 'New',
+                value REAL DEFAULT 0,
+                source TEXT,
+                assigned_to TEXT,
+                status TEXT DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                notes TEXT,
+                tags TEXT,
+                score REAL
             )
         ''')
 

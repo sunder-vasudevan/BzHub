@@ -1,5 +1,3 @@
-
-
 """BizHub Desktop Application - Tkinter UI refactored to use services."""
 import os
 import sys
@@ -36,6 +34,132 @@ from src.core import CurrencyFormatter, HRCalculator
 
 
 class BizHubDesktopApp:
+    def on_tab_changed(self, event):
+        tab_text = event.widget.tab(event.widget.select(), "text")
+        # Main notebook tabs
+        if tab_text == "📦 Inventory":
+            if hasattr(self, 'refresh_inventory_list') and hasattr(self, 'inv_tree'):
+                self.refresh_inventory_list()
+        elif tab_text == "💳 POS":
+            if hasattr(self, 'load_pos_items') and hasattr(self, 'pos_items_tree'):
+                self.load_pos_items()
+        elif tab_text == "👥 HR":
+            if hasattr(self, 'refresh_hr_cards') and hasattr(self, 'hr_cards_frame'):
+                self.refresh_hr_cards()
+        elif tab_text == "🧑‍💼 Visitors":
+            if hasattr(self, 'refresh_visitors_cards') and hasattr(self, 'vis_cards_frame'):
+                self.refresh_visitors_cards()
+        elif tab_text == "📇 CRM":
+            # CRM sub-tabs
+            if hasattr(self, 'crm_notebook'):
+                sub_tab_text = self.crm_notebook.tab(self.crm_notebook.select(), "text")
+                if sub_tab_text == "📦 Inventory" and hasattr(self, 'refresh_inventory_list') and hasattr(self, 'inv_tree'):
+                    self.refresh_inventory_list()
+                elif sub_tab_text == "💳 POS" and hasattr(self, 'load_pos_items'):
+                    self.load_pos_items()
+                elif sub_tab_text == "👥 HR" and hasattr(self, 'refresh_hr_cards'):
+                    self.refresh_hr_cards()
+                elif sub_tab_text == "🧑‍💼 Visitors" and hasattr(self, 'refresh_visitors_cards'):
+                    self.refresh_visitors_cards()
+                elif sub_tab_text == "📝 Leads" and hasattr(self, 'refresh_leads_list'):
+                    self.refresh_leads_list()
+
+
+    def create_reports_tab(self, parent):
+        """Create reports tab (admin only)."""
+        container = tk.Frame(parent, bg=self.colors["bg"])
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+        header = tk.Frame(container, bg=self.colors["bg"])
+        header.pack(fill="x", pady=(0, 12))
+        ttk.Label(header, text="📈 Reports", style="Header.TLabel").pack(side="left")
+        ttk.Label(header, text="Sales insights and performance", style="Subheader.TLabel").pack(side="left", padx=10)
+        period_frame = tk.Frame(header, bg=self.colors["bg"])
+        period_frame.pack(side="right")
+        ttk.Label(period_frame, text="Time Range", style="Subheader.TLabel").pack(side="left", padx=(0, 8))
+        self.reports_period_var = tk.StringVar(value="Last 30 Days")
+        self.reports_period_map = {
+            "Last 7 Days": "7",
+            "Last 30 Days": "30",
+            "Quarter": "90",
+            "Year": "365",
+        }
+        self.reports_period_combo = ttk.Combobox(period_frame, values=list(self.reports_period_map.keys()),
+                                                 textvariable=self.reports_period_var, state="readonly", width=16)
+        self.reports_period_combo.pack(side="left")
+        self.reports_period_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_reports())
+        cards_row = tk.Frame(container, bg=self.colors["bg"])
+        cards_row.pack(fill="x", pady=(0, 12))
+        self.reports_kpi = {}
+        self.reports_kpi["total_sales"] = self._create_kpi_card(cards_row, "Total Sales")
+        self.reports_kpi["avg_daily"] = self._create_kpi_card(cards_row, "Avg Daily Sales")
+        self.reports_kpi["top_item"] = self._create_kpi_card(cards_row, "Top Item")
+        self.reports_kpi["items_sold"] = self._create_kpi_card(cards_row, "Items Sold")
+        charts_row = tk.Frame(container, bg=self.colors["bg"])
+        charts_row.pack(fill="both", expand=True)
+        trend_card = tk.Frame(charts_row, bg=self.colors["card"], padx=12, pady=12)
+        trend_card.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        tk.Label(trend_card, text="Sales Trend", bg=self.colors["card"], fg=self.colors["text"],
+                 font=("Arial", 10, "bold")).pack(anchor="w")
+        self.reports_sales_fig = Figure(figsize=(5, 3), dpi=100)
+        self.reports_sales_ax = self.reports_sales_fig.add_subplot(111)
+        self.reports_sales_canvas = FigureCanvasTkAgg(self.reports_sales_fig, master=trend_card)
+        self.reports_sales_canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.reports_sales_canvas.get_tk_widget().bind(
+            "<Configure>",
+            lambda e: self._resize_figure(e, self.reports_sales_fig, self.reports_sales_canvas)
+        )
+        self.reports_sales_canvas.get_tk_widget().bind(
+            "<Double-1>",
+            lambda _e: self.open_chart_zoom("Sales Trend", lambda ax: self._draw_sales_trend(ax, self._reports_trend))
+        )
+        items_card = tk.Frame(charts_row, bg=self.colors["card"], padx=12, pady=12)
+        items_card.pack(side="left", fill="both", expand=True, padx=(8, 0))
+        tk.Label(items_card, text="Top Items", bg=self.colors["card"], fg=self.colors["text"],
+                 font=("Arial", 10, "bold")).pack(anchor="w")
+        self.reports_items_fig = Figure(figsize=(5, 3), dpi=100)
+        self.reports_items_ax = self.reports_items_fig.add_subplot(111)
+        self.reports_items_canvas = FigureCanvasTkAgg(self.reports_items_fig, master=items_card)
+        self.reports_items_canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.reports_items_canvas.get_tk_widget().bind(
+            "<Configure>",
+            lambda e: self._resize_figure(e, self.reports_items_fig, self.reports_items_canvas)
+        )
+        self.reports_items_canvas.get_tk_widget().bind(
+            "<Double-1>",
+            lambda _e: self.open_chart_zoom("Top Items", lambda ax: self._draw_top_items(ax, self._reports_summary))
+        )
+        self.refresh_reports()
+
+    def add_tab(self, parent, name, builder_fn, icon=None):
+        """
+        Robustly add a tab to a notebook or pack a frame if parent is not a notebook.
+        - parent: ttk.Notebook or tk.Frame
+        - name: Tab name (string)
+        - builder_fn: Function that takes a parent frame and builds the tab UI
+        - icon: Optional emoji or icon string for tab label
+        Returns the created frame.
+        """
+        if not hasattr(self, 'tab_index'):
+            self.tab_index = {}
+        label = f"{icon} {name}" if icon else name
+        if name in self.tab_index:
+            print(f"[WARN] Tab '{name}' already exists, skipping.")
+            return self.tab_index[name]
+        frame = ttk.Frame(parent)
+        try:
+            builder_fn(frame)
+        except Exception as e:
+            print(f"[ERROR] Failed to build tab '{name}':", e)
+            tk.Label(frame, text=f"Error loading {name}: {e}", fg="#EF4444").pack(pady=40)
+        # Only add as tab if parent is a Notebook
+        if hasattr(parent, 'add'):
+            if hasattr(parent, 'add'):
+                parent.add(frame, text=label)
+        else:
+            frame.pack(fill="both", expand=True)
+        self.tab_index[name] = frame
+        return frame
+
     def show_main_ui(self):
         """Show the main UI after login or test bypass."""
         self.clear_root()
@@ -64,30 +188,39 @@ class BizHubDesktopApp:
         self.notebook = ttk.Notebook(self.content_frame)
         self.notebook.pack(fill="both", expand=True)
         self.tab_index = {}
-        # Add all main modules as tabs
-        self.create_dashboard_tab()
-        self.create_inventory_tab()
-        self.create_pos_tab()
-        self.create_reports_tab()
-        self.create_hr_tab()
-        self.create_visitors_tab()
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        # Add all main modules as tabs using add_tab (top-level)
+        self.tab_index = {}
+        self.add_tab(self.notebook, "Dashboard", self.create_dashboard_tab, icon="📊")
+        self.tab_index.pop("Inventory", None)
+        self.tab_index.pop("POS", None)
+        self.tab_index.pop("Visitors", None)
+        self.add_tab(self.notebook, "Inventory", self.create_inventory_tab, icon="📦")
+        self.add_tab(self.notebook, "POS", self.create_pos_tab, icon="💳")
+        self.add_tab(self.notebook, "HR", self.create_hr_tab, icon="👥")
+        self.add_tab(self.notebook, "Visitors", self.create_visitors_tab, icon="🧑‍💼")
+        self.add_tab(self.notebook, "Reports", self.create_reports_tab, icon="📈")
+        self.add_tab(self.notebook, "CRM", self.create_crm_tab, icon="📇")
         # Sidebar navigation buttons
         self.sidebar_buttons = {}
         nav_items = [
-            ("Dashboard", lambda: self.select_tab("Dashboard")),
-            ("Inventory", lambda: self.select_tab("Inventory")),
-            ("Sales", lambda: self.select_tab("POS")),
-            ("Reports", lambda: self.select_tab("Reports")),
-            ("HR", lambda: self.select_tab("HR")),
-            ("Visitors", lambda: self.select_tab("Visitors")),
+            ("Dashboard", "📊"),
+            ("Inventory", "📦"),
+            ("POS", "💳"),
+            ("Reports", "📈"),
+            ("HR", "👥"),
+            ("Visitors", "🧑‍💼"),
         ]
-        for idx, (label, command) in enumerate(nav_items):
-            btn = ttk.Button(self.sidebar_frame, text=label, style="Sidebar.TButton", command=command)
+        for idx, (label, icon) in enumerate(nav_items):
+            def make_cmd(tab=label):
+                return lambda: self.select_tab(tab)
+            btn = ttk.Button(self.sidebar_frame, text=f"{icon} {label}", style="Sidebar.TButton", command=make_cmd())
             btn.pack(fill="x", pady=2, padx=8)
             self.sidebar_buttons[label] = btn
         print("[DEBUG] sidebar buttons:", list(self.sidebar_buttons.keys()))
         # Select dashboard tab by default
         self.select_tab("Dashboard")
+
     def show_dashboard(self):
         self._show_placeholder("Dashboard")
 
@@ -114,7 +247,6 @@ class BizHubDesktopApp:
         card.pack(expand=True)
         label = tk.Label(card, text=f"{section_name} (Coming Soon)", font=("Segoe UI", 20, "bold"), fg="#6D28D9", bg="#FFFFFF")
         label.pack()
-    """Main BizHub desktop application using Tkinter."""
 
     def __init__(self, root, db_file="inventory.db"):
         self.color_scheme = "light"  # Options: light, dark, vivid
@@ -1195,44 +1327,94 @@ class BizHubDesktopApp:
         self.current_role = None
         self.show_login_screen()
 
-    def create_crm_tab(self):
+    def create_crm_tab(self, parent):
         """Create CRM tab with nested modules."""
-        frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="📇 CRM")
+        frame = ttk.Frame(parent)
+        if hasattr(parent, 'add'):
+            if hasattr(parent, 'add'):
+                parent.add(frame, text="📇 CRM")
         self.tab_index["CRM"] = frame
 
         container = tk.Frame(frame, bg=self.colors["bg"])
-        container.pack(fill="both", expand=True)
-
+        container.pack(fill="both", expand=True, padx=12, pady=12)
         self.crm_notebook = ttk.Notebook(container)
         self.crm_notebook.pack(fill="both", expand=True)
 
         self.crm_tab_index = {}
-        self.create_inventory_tab(self.crm_notebook)
-        self.create_pos_tab(self.crm_notebook)
+        # For CRM sub-tabs, create frames and build UI directly, and register in crm_tab_index
+        inventory_frame = ttk.Frame(self.crm_notebook)
+        self.crm_notebook.add(inventory_frame, text="📦 Inventory")
+        self._create_crm_inventory_tab(inventory_frame)
+        self.crm_tab_index["Inventory"] = inventory_frame
+
+        pos_frame = ttk.Frame(self.crm_notebook)
+        self.crm_notebook.add(pos_frame, text="💳 POS")
+        self.create_pos_tab(pos_frame)
+        self.crm_tab_index["POS"] = pos_frame
+
+        leads_frame = ttk.Frame(self.crm_notebook)
+        self.crm_notebook.add(leads_frame, text="📝 Leads")
+        self._create_crm_leads_tab(leads_frame)
+        self.crm_tab_index["Leads"] = leads_frame
+
         if self.current_role == "admin":
-            self.create_reports_tab(self.crm_notebook)
-        self.create_bills_tab(self.crm_notebook)
-        self.create_visitors_tab(self.crm_notebook)
-    
-    def create_dashboard_tab(self):
-        """Create dashboard tab (admin only)."""
-        frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="📊 Dashboard")
-        self.tab_index["Dashboard"] = frame
+            reports_frame = ttk.Frame(self.crm_notebook)
+            self.crm_notebook.add(reports_frame, text="📈 Reports")
+            self.create_reports_tab(reports_frame)
+            self.crm_tab_index["Reports"] = reports_frame
 
-        container = tk.Frame(frame, bg=self.colors["bg"])
+        bills_frame = ttk.Frame(self.crm_notebook)
+        self.crm_notebook.add(bills_frame, text="📋 Bills")
+        self.create_bills_tab(bills_frame)
+        self.crm_tab_index["Bills"] = bills_frame
+
+        visitors_frame = ttk.Frame(self.crm_notebook)
+        self.crm_notebook.add(visitors_frame, text="🧑‍💼 Visitors")
+        self.create_visitors_tab(visitors_frame)
+        self.crm_tab_index["Visitors"] = visitors_frame
+
+    def _create_crm_leads_tab(self, parent):
+        container = tk.Frame(parent, bg=self.colors["bg"])
         container.pack(fill="both", expand=True, padx=12, pady=12)
-
         header = tk.Frame(container, bg=self.colors["bg"])
         header.pack(fill="x", pady=(0, 12))
+        ttk.Label(header, text="📝 Leads & Opportunities", style="Header.TLabel").pack(side="left")
+        ttk.Label(header, text="Manage leads, opportunities, and pipeline", style="Subheader.TLabel").pack(side="left", padx=10)
+        # Leads Table
+        self.leads_tree = ttk.Treeview(container, columns=("Name", "Contact", "Company", "Stage", "Value"), show="headings", height=12)
+        for col in ("Name", "Contact", "Company", "Stage", "Value"):
+            self.leads_tree.heading(col, text=col)
+            self.leads_tree.column(col, width=120, anchor="center")
+        self.leads_tree.pack(fill="both", expand=True)
+        self.refresh_leads_list()
 
+    def refresh_leads_list(self):
+        # Dummy implementation: replace with real service call
+        for item in self.leads_tree.get_children():
+            self.leads_tree.delete(item)
+        leads = []  # TODO: Replace with self.lead_opportunity_service.list_leads()
+        if not leads:
+            no_data_frame = tk.Frame(self.leads_tree.master, bg=self.colors["bg"])
+            no_data_frame.place(relx=0.5, rely=0.5, anchor="center")
+            tk.Label(no_data_frame, text="No leads found", bg=self.colors["bg"], fg="#888", font=("Arial", 14)).pack()
+            ttk.Button(no_data_frame, text="Add Lead", style="Primary.TButton").pack(pady=8)
+            self.leads_tree.no_data_frame = no_data_frame
+        else:
+            if hasattr(self.leads_tree, 'no_data_frame'):
+                self.leads_tree.no_data_frame.destroy()
+            for lead in leads:
+                self.leads_tree.insert('', 'end', values=(lead.name, lead.contact_name, lead.company, lead.stage, lead.value))
+    
+    def create_dashboard_tab(self, parent):
+        """Create dashboard tab (admin only)."""
+        container = tk.Frame(parent, bg=self.colors["bg"])
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+        header = tk.Frame(container, bg=self.colors["bg"])
+        header.pack(fill="x", pady=(0, 12))
         ttk.Label(header, text="📊 Dashboard", style="Header.TLabel").pack(side="left")
-
         period_frame = tk.Frame(header, bg=self.colors["bg"])
         period_frame.pack(side="right")
         ttk.Label(period_frame, text="Projection Window", style="Subheader.TLabel").pack(side="left", padx=(0, 8))
-
         self.dashboard_period_var = tk.StringVar(value="Last 7 Days")
         self.period_map = {
             "Last 7 Days": "7",
@@ -1244,11 +1426,8 @@ class BizHubDesktopApp:
                                          textvariable=self.dashboard_period_var, state="readonly", width=16)
         self.period_combo.pack(side="left")
         self.period_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_dashboard())
-
-        # KPI Cards
         kpi_row = tk.Frame(container, bg=self.colors["bg"])
         kpi_row.pack(fill="x", pady=(0, 12))
-
         self.kpi_labels = {}
         self.kpi_labels["sales"] = self._create_kpi_card(kpi_row, "Sales (Period)")
         self.kpi_labels["inventory"] = self._create_kpi_card(kpi_row, "Inventory Value")
@@ -1256,16 +1435,12 @@ class BizHubDesktopApp:
         self.kpi_labels["visitors"] = self._create_kpi_card(kpi_row, "Visitors")
         self.kpi_labels["avg_daily_sales"] = self._create_kpi_card(kpi_row, "Avg Daily Sales")
         self.kpi_labels["sales_growth"] = self._create_kpi_card(kpi_row, "Sales Growth %")
-
-        # Charts
         charts_row = tk.Frame(container, bg=self.colors["bg"])
         charts_row.pack(fill="both", expand=True)
-
         sales_chart_card = tk.Frame(charts_row, bg=self.colors["card"], padx=12, pady=12)
         sales_chart_card.pack(side="left", fill="both", expand=True, padx=(0, 8))
         tk.Label(sales_chart_card, text="Sales Trend", bg=self.colors["card"], fg=self.colors["text"],
                  font=("Arial", 10, "bold")).pack(anchor="w")
-
         self.sales_fig = Figure(figsize=(5, 3), dpi=100)
         self.sales_ax = self.sales_fig.add_subplot(111)
         self.sales_canvas = FigureCanvasTkAgg(self.sales_fig, master=sales_chart_card)
@@ -1278,12 +1453,10 @@ class BizHubDesktopApp:
             "<Double-1>",
             lambda _e: self.open_chart_zoom("Sales Trend", lambda ax: self._draw_sales_trend(ax, self._dashboard_sales_trend))
         )
-
         top_items_card = tk.Frame(charts_row, bg=self.colors["card"], padx=12, pady=12)
         top_items_card.pack(side="left", fill="both", expand=True, padx=(8, 0))
         tk.Label(top_items_card, text="Top Selling Items", bg=self.colors["card"], fg=self.colors["text"],
                  font=("Arial", 10, "bold")).pack(anchor="w")
-
         self.top_fig = Figure(figsize=(5, 3), dpi=100)
         self.top_ax = self.top_fig.add_subplot(111)
         self.top_canvas = FigureCanvasTkAgg(self.top_fig, master=top_items_card)
@@ -1296,16 +1469,12 @@ class BizHubDesktopApp:
             "<Double-1>",
             lambda _e: self.open_chart_zoom("Top Selling Items", lambda ax: self._draw_top_items(ax, self._dashboard_sales_summary))
         )
-
-        # Tables
         tables_row = tk.Frame(container, bg=self.colors["bg"])
         tables_row.pack(fill="both", expand=True, pady=(12, 0))
-
         reorder_card = tk.Frame(tables_row, bg=self.colors["card"], padx=12, pady=12)
         reorder_card.pack(side="left", fill="both", expand=True, padx=(0, 8))
         tk.Label(reorder_card, text="Reorder Recommendations", bg=self.colors["card"], fg=self.colors["text"],
                  font=("Arial", 10, "bold")).pack(anchor="w")
-
         self.reorder_tree = ttk.Treeview(reorder_card, columns=("Item", "Current", "AvgDaily", "Recommend"),
                                          show="headings", height=6)
         for col, text, width in [("Item", "Item", 160), ("Current", "Current Qty", 90),
@@ -1313,19 +1482,16 @@ class BizHubDesktopApp:
             self.reorder_tree.heading(col, text=text)
             self.reorder_tree.column(col, anchor="center", width=width)
         self.reorder_tree.pack(fill="both", expand=True, pady=(6, 0))
-
         low_card = tk.Frame(tables_row, bg=self.colors["card"], padx=12, pady=12)
         low_card.pack(side="left", fill="both", expand=True, padx=(8, 0))
         tk.Label(low_card, text="Low Stock Items", bg=self.colors["card"], fg=self.colors["text"],
                  font=("Arial", 10, "bold")).pack(anchor="w")
-
         self.low_stock_tree = ttk.Treeview(low_card, columns=("Item", "Qty", "Threshold"),
                                            show="headings", height=6)
         for col, text, width in [("Item", "Item", 180), ("Qty", "Qty", 70), ("Threshold", "Threshold", 90)]:
             self.low_stock_tree.heading(col, text=text)
             self.low_stock_tree.column(col, anchor="center", width=width)
         self.low_stock_tree.pack(fill="both", expand=True, pady=(6, 0))
-
         self.refresh_dashboard()
 
     def _create_kpi_card(self, parent, title):
@@ -1401,7 +1567,8 @@ class BizHubDesktopApp:
         """Create inventory management tab."""
         parent = notebook or self.notebook
         frame = ttk.Frame(parent)
-        parent.add(frame, text="📦 Inventory")
+        if hasattr(parent, 'add'):
+            parent.add(frame, text="📦 Inventory")
         if notebook is not None:
             self.crm_tab_index["Inventory"] = frame
         else:
@@ -1474,6 +1641,15 @@ class BizHubDesktopApp:
         ttk.Button(export_import_row, text="Export Excel", command=self.export_inventory_excel, style="Info.TButton").pack(side="left", padx=2)
         ttk.Button(export_import_row, text="Import CSV", command=self.import_inventory_csv, style="Info.TButton").pack(side="left", padx=12)
         ttk.Button(export_import_row, text="Import Excel", command=self.import_inventory_excel, style="Info.TButton").pack(side="left", padx=2)
+
+        # Ensure inv_tree is always initialized
+        columns = ("Item", "Qty", "Threshold", "Cost", "Sale", "Description")
+        self.inv_tree = ttk.Treeview(list_card, columns=columns, height=18, show="headings")
+        for col, width in [("Item", 180), ("Qty", 70), ("Threshold", 90), ("Cost", 90), ("Sale", 90), ("Description", 220)]:
+            self.inv_tree.column(col, anchor="center", width=width)
+            self.inv_tree.heading(col, text=col)
+        self.inv_tree.pack(fill="both", expand=True, pady=(6, 0))
+        self.inv_tree.bind("<Double-1>", self.on_inventory_select)
     def export_inventory_csv(self):
         """Export inventory to CSV file."""
         import csv
@@ -1711,12 +1887,14 @@ class BizHubDesktopApp:
                 image_path = details.get("image_path") or ""
                 self.inv_image.insert(0, image_path)
     
-    def create_pos_tab(self, notebook=None):
+    def create_pos_tab(self, parent):
         """Create POS tab."""
-        parent = notebook or self.notebook
         frame = ttk.Frame(parent)
-        parent.add(frame, text="💳 POS")
-        if notebook is not None:
+        # Only add the frame if parent is a Notebook (has .add method)
+        if hasattr(parent, 'add'):
+            if hasattr(parent, 'add'):
+                parent.add(frame, text="💳 POS")
+        if hasattr(self, 'crm_tab_index'):
             self.crm_tab_index["POS"] = frame
         else:
             self.tab_index["POS"] = frame
@@ -1799,7 +1977,8 @@ class BizHubDesktopApp:
         """Create bills tab."""
         parent = notebook or self.notebook
         frame = ttk.Frame(parent)
-        parent.add(frame, text="📋 Bills")
+        if hasattr(parent, 'add'):
+            parent.add(frame, text="📋 Bills")
         if notebook is not None:
             self.crm_tab_index["Bills"] = frame
         else:
@@ -2173,12 +2352,14 @@ class BizHubDesktopApp:
 
         self._show_print_preview("\n".join(lines), f"Employee ID Card - {emp_number}")
     
-    def create_visitors_tab(self, notebook=None):
+    def create_visitors_tab(self, parent):
         """Create visitors tab."""
-        parent = notebook or self.notebook
         frame = ttk.Frame(parent)
-        parent.add(frame, text="👥 Visitors")
-        if notebook is not None:
+        # Only add the frame if parent is a Notebook (has .add method)
+        if hasattr(parent, 'add'):
+            if hasattr(parent, 'add'):
+                parent.add(frame, text="👥 Visitors")
+        if hasattr(self, 'crm_tab_index'):
             self.crm_tab_index["Visitors"] = frame
         else:
             self.tab_index["Visitors"] = frame
@@ -2218,10 +2399,12 @@ class BizHubDesktopApp:
 
         self.refresh_visitors_cards()
     
-    def create_hr_tab(self):
+    def create_hr_tab(self, parent):
         """Create HR tab (admin only)."""
-        frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="👔 HR")
+        frame = ttk.Frame(parent)
+        if hasattr(parent, 'add'):
+            if hasattr(parent, 'add'):
+                parent.add(frame, text="👔 HR")
         self.tab_index["HR"] = frame
 
         container = tk.Frame(frame, bg=self.colors["bg"])
@@ -2285,96 +2468,80 @@ class BizHubDesktopApp:
         self.refresh_hr_cards()
 
         # === Payroll tab ===
-        self.build_payroll_ui(payroll_tab)
-        self.build_appraisals_ui(appraisals_tab)
+        # self.build_payroll_ui(payroll_tab)  # Commented out: not implemented
+        # self.build_appraisals_ui(appraisals_tab)  # Commented out: not implemented
         self.build_feedback_ui(feedback_tab)
     
-    def create_reports_tab(self, notebook=None):
-        """Create reports tab (admin only)."""
-        parent = notebook or self.notebook
-        frame = ttk.Frame(parent)
-        parent.add(frame, text="📊 Reports")
-        if notebook is not None:
-            self.crm_tab_index["Reports"] = frame
+    def create_inventory_tab(self, parent):
+        """Create inventory management tab."""
+        # Use the main inventory tab builder for both main and CRM
+        if hasattr(self, 'notebook') and parent == self.notebook:
+            # Main tab: use full-featured inventory tab
+            self._create_full_inventory_tab(parent)
         else:
-            self.tab_index["Reports"] = frame
+            # CRM or sub-notebook: use a simplified inventory list
+            self._create_crm_inventory_tab(parent)
 
-        container = tk.Frame(frame, bg=self.colors["bg"])
+    def _create_full_inventory_tab(self, parent):
+        # ...existing full-featured inventory tab code from create_inventory_tab...
+        container = tk.Frame(parent, bg=self.colors["bg"])
         container.pack(fill="both", expand=True, padx=12, pady=12)
-
         header = tk.Frame(container, bg=self.colors["bg"])
         header.pack(fill="x", pady=(0, 12))
-        ttk.Label(header, text="📈 Reports", style="Header.TLabel").pack(side="left")
-        ttk.Label(header, text="Sales insights and performance", style="Subheader.TLabel").pack(side="left", padx=10)
+        ttk.Label(header, text="📦 Inventory", style="Header.TLabel").pack(side="left")
+        ttk.Label(header, text="Manage stock, pricing, and thresholds", style="Subheader.TLabel").pack(side="left", padx=10)
 
-        period_frame = tk.Frame(header, bg=self.colors["bg"])
-        period_frame.pack(side="right")
-        ttk.Label(period_frame, text="Time Range", style="Subheader.TLabel").pack(side="left", padx=(0, 8))
+        # Inventory Table
+        table_frame = tk.Frame(container, bg=self.colors["card"])
+        table_frame.pack(fill="both", expand=True, padx=0, pady=0)
+        columns = ("Name", "Qty", "Threshold", "Cost", "Sale", "Desc")
+        self.inv_tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=18)
+        for col in columns:
+            self.inv_tree.heading(col, text=col)
+            self.inv_tree.column(col, width=100, anchor="center")
+        self.inv_tree.pack(fill="both", expand=True)
+        self.refresh_inventory_list()
 
-        self.reports_period_var = tk.StringVar(value="Last 30 Days")
-        self.reports_period_map = {
-            "Last 7 Days": "7",
-            "Last 30 Days": "30",
-            "Quarter": "90",
-            "Year": "365",
-        }
-        self.reports_period_combo = ttk.Combobox(period_frame, values=list(self.reports_period_map.keys()),
-                                                 textvariable=self.reports_period_var, state="readonly", width=16)
-        self.reports_period_combo.pack(side="left")
-        self.reports_period_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_reports())
+    def _create_crm_inventory_tab(self, parent):
+        # Simplified inventory list for CRM tab
+        container = tk.Frame(parent, bg=self.colors["bg"])
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+        header = tk.Frame(container, bg=self.colors["bg"])
+        header.pack(fill="x", pady=(0, 12))
+        ttk.Label(header, text="📦 Inventory", style="Header.TLabel").pack(side="left")
+        ttk.Label(header, text="Inventory Overview", style="Subheader.TLabel").pack(side="left", padx=10)
 
-        # Summary cards
-        cards_row = tk.Frame(container, bg=self.colors["bg"])
-        cards_row.pack(fill="x", pady=(0, 12))
+        table_frame = tk.Frame(container, bg=self.colors["card"])
+        table_frame.pack(fill="both", expand=True, padx=0, pady=0)
+        columns = ("Name", "Qty", "Threshold", "Cost", "Sale", "Desc")
+        tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=18)
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=100, anchor="center")
+        tree.pack(fill="both", expand=True)
+        # Populate with inventory data (tuple-based)
+        items = self.inventory_service.get_all_items()
+        for item in items:
+            # item: (name, qty, threshold, cost, sale, desc)
+            tree.insert('', 'end', values=(
+                item[0],  # Name
+                item[1],  # Qty
+                item[2],  # Threshold
+                item[3],  # Cost
+                item[4],  # Sale
+                item[5]   # Desc
+            ))
 
-        self.reports_kpi = {}
-        self.reports_kpi["total_sales"] = self._create_kpi_card(cards_row, "Total Sales")
-        self.reports_kpi["avg_daily"] = self._create_kpi_card(cards_row, "Avg Daily Sales")
-        self.reports_kpi["top_item"] = self._create_kpi_card(cards_row, "Top Item")
-        self.reports_kpi["items_sold"] = self._create_kpi_card(cards_row, "Items Sold")
+        # Add/Update/Delete buttons (placeholder)
+        btn_row = tk.Frame(container, bg=self.colors["bg"])
+        btn_row.pack(fill="x", pady=(8, 0))
+        ttk.Button(btn_row, text="Add Item", style="Primary.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(btn_row, text="Update Item", style="Success.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(btn_row, text="Delete Item", style="Danger.TButton").pack(side="left", padx=3)
+        ttk.Button(btn_row, text="Clear", style="Info.TButton").pack(side="left", padx=3)
 
-        # Charts
-        charts_row = tk.Frame(container, bg=self.colors["bg"])
-        charts_row.pack(fill="both", expand=True)
+        self.refresh_inventory_list()
 
-        trend_card = tk.Frame(charts_row, bg=self.colors["card"], padx=12, pady=12)
-        trend_card.pack(side="left", fill="both", expand=True, padx=(0, 8))
-        tk.Label(trend_card, text="Sales Trend", bg=self.colors["card"], fg=self.colors["text"],
-                 font=("Arial", 10, "bold")).pack(anchor="w")
-
-        self.reports_sales_fig = Figure(figsize=(5, 3), dpi=100)
-        self.reports_sales_ax = self.reports_sales_fig.add_subplot(111)
-        self.reports_sales_canvas = FigureCanvasTkAgg(self.reports_sales_fig, master=trend_card)
-        self.reports_sales_canvas.get_tk_widget().pack(fill="both", expand=True)
-        self.reports_sales_canvas.get_tk_widget().bind(
-            "<Configure>",
-            lambda e: self._resize_figure(e, self.reports_sales_fig, self.reports_sales_canvas)
-        )
-        self.reports_sales_canvas.get_tk_widget().bind(
-            "<Double-1>",
-            lambda _e: self.open_chart_zoom("Sales Trend", lambda ax: self._draw_sales_trend(ax, self._reports_trend))
-        )
-
-        items_card = tk.Frame(charts_row, bg=self.colors["card"], padx=12, pady=12)
-        items_card.pack(side="left", fill="both", expand=True, padx=(8, 0))
-        tk.Label(items_card, text="Top Items", bg=self.colors["card"], fg=self.colors["text"],
-                 font=("Arial", 10, "bold")).pack(anchor="w")
-
-        self.reports_items_fig = Figure(figsize=(5, 3), dpi=100)
-        self.reports_items_ax = self.reports_items_fig.add_subplot(111)
-        self.reports_items_canvas = FigureCanvasTkAgg(self.reports_items_fig, master=items_card)
-        self.reports_items_canvas.get_tk_widget().pack(fill="both", expand=True)
-        self.reports_items_canvas.get_tk_widget().bind(
-            "<Configure>",
-            lambda e: self._resize_figure(e, self.reports_items_fig, self.reports_items_canvas)
-        )
-        self.reports_items_canvas.get_tk_widget().bind(
-            "<Double-1>",
-            lambda _e: self.open_chart_zoom("Top Items", lambda ax: self._draw_top_items(ax, self._reports_summary))
-        )
-
-        self.refresh_reports()
-    
     def create_settings_tab(self):
         """Create settings tab (admin only)."""
         frame = ttk.Frame(self.notebook)
@@ -2526,200 +2693,37 @@ class BizHubDesktopApp:
         window.title("Payroll Manager")
         window.geometry("900x600")
         window.minsize(820, 540)
-        self.build_payroll_ui(window)
+        # self.build_payroll_ui(window)  # Commented out: not implemented
 
-    def build_payroll_ui(self, parent):
-        """Build payroll UI inside a parent container."""
-        container = tk.Frame(parent, bg=self.colors["bg"], padx=12, pady=12)
-        container.pack(fill="both", expand=True)
+    def create_crm_tab(self, parent):
+        """Create CRM tab with nested modules."""
+        frame = ttk.Frame(parent)
+        # Only add as tab if parent is a Notebook
+        if hasattr(parent, 'add'):
+            parent.add(frame, text="📇 CRM")
+        else:
+            frame.pack(fill="both", expand=True)
+        self.tab_index["CRM"] = frame
 
-        header = tk.Frame(container, bg=self.colors["bg"])
-        header.pack(fill="x", pady=(0, 8))
-        tk.Label(header, text="Payroll", bg=self.colors["bg"], fg=self.colors["text"],
-                 font=("Arial", 12, "bold")).pack(side="left")
+        container = tk.Frame(frame, bg=self.colors["bg"])
+        container.pack(fill="both", expand=True, padx=12, pady=12)
 
-        body = tk.Frame(container, bg=self.colors["bg"])
-        body.pack(fill="both", expand=True)
+        self.crm_notebook = ttk.Notebook(container)
+        self.crm_notebook.pack(fill="both", expand=True)
 
-        form_card = tk.Frame(body, bg=self.colors["card"], padx=12, pady=12)
-        form_card.pack(side="left", fill="y", padx=(0, 10))
+        self.crm_tab_index = {}
+        # Use add_tab for CRM sub-tabs
+        self.add_tab(self.crm_notebook, "Inventory", self._create_crm_inventory_tab, icon="📦")
+        self.add_tab(self.crm_notebook, "POS", self.create_pos_tab, icon="💳")
+        self.add_tab(self.crm_notebook, "Leads", self._create_crm_leads_tab, icon="📝")
+        if self.current_role == "admin":
+            self.add_tab(self.crm_notebook, "Reports", self.create_reports_tab, icon="📈")
+        self.add_tab(self.crm_notebook, "Bills", self.create_bills_tab, icon="📋")
+        self.add_tab(self.crm_notebook, "Visitors", self.create_visitors_tab, icon="🧑‍💼")
 
-        list_card = tk.Frame(body, bg=self.colors["card"], padx=12, pady=12)
-        list_card.pack(side="left", fill="both", expand=True)
 
-        def form_field(label_text):
-            row = tk.Frame(form_card, bg=self.colors["card"])
-            row.pack(fill="x", pady=4)
-            tk.Label(row, text=label_text, bg=self.colors["card"], fg=self.colors["muted"], width=14, anchor="w").pack(side="left")
-            entry = ttk.Entry(row)
-            entry.pack(side="left", fill="x", expand=True)
-            return entry
 
-        # Employees
-        employees = self.hr_service.get_all_employees()
-        active_emps = [e for e in employees if len(e) > 12 and e[12] == 1]
-        emp_options = [f"{e[0]} - {e[2]}" for e in active_emps]
-        emp_row = tk.Frame(form_card, bg=self.colors["card"])
-        emp_row.pack(fill="x", pady=4)
-        tk.Label(emp_row, text="Employee", bg=self.colors["card"], fg=self.colors["muted"], width=14, anchor="w").pack(side="left")
-        emp_var = tk.StringVar()
-        emp_combo = ttk.Combobox(emp_row, values=emp_options, textvariable=emp_var, state="readonly")
-        emp_combo.pack(side="left", fill="x", expand=True)
-
-        period_start = form_field("Period Start")
-        period_end = form_field("Period End")
-        base_salary = form_field("Base Salary")
-        allowances = form_field("Allowances")
-        deductions = form_field("Deductions")
-        overtime_hours = form_field("Overtime Hours")
-        overtime_rate = form_field("Overtime Rate")
-        status = form_field("Status")
-        paid_date = form_field("Paid Date")
-
-        status.insert(0, "Draft")
-
-        columns = ("ID", "Employee", "Period", "Gross", "Net", "Status", "Paid")
-        payroll_tree = ttk.Treeview(list_card, columns=columns, show="headings", height=14)
-        for col, width in [("ID", 60), ("Employee", 180), ("Period", 160), ("Gross", 90), ("Net", 90), ("Status", 90), ("Paid", 120)]:
-            payroll_tree.column(col, anchor="center", width=width)
-            payroll_tree.heading(col, text=col)
-        payroll_tree.pack(fill="both", expand=True)
-
-        def parse_employee_id():
-            if not emp_var.get():
-                return None
-            return int(emp_var.get().split(" - ", 1)[0])
-
-        def refresh_payroll_list():
-            for item in payroll_tree.get_children():
-                payroll_tree.delete(item)
-            rows = self.payroll_service.get_all_payrolls()
-            emp_lookup = {e[0]: e[2] for e in employees}
-            for row in rows:
-                payroll_id = row[0]
-                employee_id = row[1]
-                period = f"{row[2]} → {row[3]}"
-                gross = CurrencyFormatter.format_currency(row[9])
-                net = CurrencyFormatter.format_currency(row[10])
-                payroll_tree.insert('', 'end', values=(
-                    payroll_id,
-                    emp_lookup.get(employee_id, str(employee_id)),
-                    period,
-                    gross,
-                    net,
-                    row[11],
-                    row[12] or ""
-                ))
-
-        def clear_form():
-            emp_var.set("")
-            for entry in [period_start, period_end, base_salary, allowances, deductions, overtime_hours, overtime_rate, status, paid_date]:
-                entry.delete(0, tk.END)
-            status.insert(0, "Draft")
-
-        def add_payroll():
-            try:
-                emp_id = parse_employee_id()
-                if not emp_id:
-                    messagebox.showerror("Payroll", "Select an employee")
-                    return
-                if self.payroll_service.add_payroll(
-                    emp_id,
-                    period_start.get().strip(),
-                    period_end.get().strip(),
-                    float(base_salary.get() or 0),
-                    float(allowances.get() or 0),
-                    float(deductions.get() or 0),
-                    float(overtime_hours.get() or 0),
-                    float(overtime_rate.get() or 0),
-                    status.get().strip() or "Draft",
-                    paid_date.get().strip(),
-                ):
-                    refresh_payroll_list()
-                    clear_form()
-                else:
-                    messagebox.showerror("Payroll", "Failed to add payroll")
-            except Exception as e:
-                messagebox.showerror("Payroll", f"Invalid input: {e}")
-
-        def update_payroll():
-            selection = payroll_tree.selection()
-            if not selection:
-                messagebox.showerror("Payroll", "Select a payroll record")
-                return
-            payroll_id = payroll_tree.item(selection[0])["values"][0]
-            try:
-                emp_id = parse_employee_id()
-                self.payroll_service.update_payroll(
-                    int(payroll_id),
-                    employee_id=emp_id,
-                    period_start=period_start.get().strip(),
-                    period_end=period_end.get().strip(),
-                    base_salary=float(base_salary.get() or 0),
-                    allowances=float(allowances.get() or 0),
-                    deductions=float(deductions.get() or 0),
-                    overtime_hours=float(overtime_hours.get() or 0),
-                    overtime_rate=float(overtime_rate.get() or 0),
-                    status=status.get().strip() or "Draft",
-                    paid_date=paid_date.get().strip(),
-                )
-                refresh_payroll_list()
-            except Exception as e:
-                messagebox.showerror("Payroll", f"Invalid input: {e}")
-
-        def delete_payroll():
-            selection = payroll_tree.selection()
-            if not selection:
-                messagebox.showerror("Payroll", "Select a payroll record")
-                return
-            payroll_id = payroll_tree.item(selection[0])["values"][0]
-            messagebox.showwarning("Caution", "This will permanently delete the payroll record.")
-            if not messagebox.askyesno("Confirm", "Delete the selected payroll record?"):
-                return
-            if self.payroll_service.delete_payroll(int(payroll_id)):
-                refresh_payroll_list()
-            else:
-                messagebox.showerror("Payroll", "Failed to delete payroll")
-
-        def on_select(event=None):
-            selection = payroll_tree.selection()
-            if not selection:
-                return
-            values = payroll_tree.item(selection[0])["values"]
-            payroll_id = values[0]
-            record = next((r for r in self.payroll_service.get_all_payrolls() if r[0] == payroll_id), None)
-            if not record:
-                return
-            emp_var.set(f"{record[1]} - {next((e[2] for e in employees if e[0] == record[1]), record[1])}")
-            period_start.delete(0, tk.END)
-            period_start.insert(0, record[2] or "")
-            period_end.delete(0, tk.END)
-            period_end.insert(0, record[3] or "")
-            base_salary.delete(0, tk.END)
-            base_salary.insert(0, str(record[4]) if record[4] is not None else "0")
-            allowances.delete(0, tk.END)
-            allowances.insert(0, str(record[5]) if record[5] is not None else "0")
-            deductions.delete(0, tk.END)
-            deductions.insert(0, str(record[6]) if record[6] is not None else "0")
-            overtime_hours.delete(0, tk.END)
-            overtime_hours.insert(0, str(record[7]) if record[7] is not None else "0")
-            overtime_rate.delete(0, tk.END)
-            overtime_rate.insert(0, str(record[8]) if record[8] is not None else "0")
-            status.delete(0, tk.END)
-            status.insert(0, record[11] or "Draft")
-            paid_date.delete(0, tk.END)
-            paid_date.insert(0, record[12] or "")
-
-        payroll_tree.bind("<Double-1>", on_select)
-
-        btn_row = tk.Frame(form_card, bg=self.colors["card"])
-        btn_row.pack(fill="x", pady=(10, 0))
-        ttk.Button(btn_row, text="Add", style="Success.TButton", command=add_payroll).pack(side="left", padx=3)
-        ttk.Button(btn_row, text="Update", style="Primary.TButton", command=update_payroll).pack(side="left", padx=3)
-        ttk.Button(btn_row, text="Delete", style="Danger.TButton", command=delete_payroll).pack(side="left", padx=3)
-        ttk.Button(btn_row, text="Clear", style="Info.TButton", command=clear_form).pack(side="left", padx=3)
-
-        refresh_payroll_list()
+        # The main CRM tab should only set up the notebook and sub-tabs, not show the payslip table or payroll form.
 
     def build_appraisals_ui(self, parent):
         """Build appraisals workflow UI."""
@@ -3040,6 +3044,10 @@ class BizHubDesktopApp:
                 messagebox.showerror("Feedback", "Select target employee")
                 return
             appraisal_id = parse_appraisal_id(req_app.get())
+            try:
+                rating = float(fb_rating.get() or 0)
+            except Exception:
+                rating = 0
             if appraisal_id is not None and self.appraisal_service.create_feedback_request(appraisal_id, self.current_user or "", target_id, req_msg.get("1.0", tk.END).strip()):
                 req_msg.delete("1.0", tk.END)
                 refresh_requests()
@@ -3068,10 +3076,6 @@ class BizHubDesktopApp:
         btn_row.pack(fill="x", pady=(8, 0))
         ttk.Button(btn_row, text="Request", style="Primary.TButton", command=add_request).pack(side="left", padx=3)
         ttk.Button(btn_row, text="Add Feedback", style="Success.TButton", command=add_feedback).pack(side="left", padx=3)
-
-        refresh_requests()
-        refresh_entries()
-
     def reset_hr_search(self):
         """Reset HR search field and refresh cards."""
         self.hr_search_var.set("")
@@ -3079,6 +3083,31 @@ class BizHubDesktopApp:
 
     def refresh_hr_cards(self):
         """Refresh employee profile cards."""
+        # Show 'No data found' if no employees
+        if hasattr(self, 'hr_cards_frame'):
+            for widget in self.hr_cards_frame.winfo_children():
+                widget.destroy()
+            employees = self.hr_service.get_all_employees() if hasattr(self, 'hr_service') else []
+            if not employees:
+                no_data_frame = tk.Frame(self.hr_cards_frame, bg=self.colors["bg"])
+                no_data_frame.pack(expand=True)
+                tk.Label(no_data_frame, text="No employees found", bg=self.colors["bg"], fg="#888", font=("Arial", 14)).pack()
+                ttk.Button(no_data_frame, text="Add Employee", style="Primary.TButton", command=self.open_add_employee_dialog).pack(pady=8)
+                return
+        # Show 'No data found' if no POS items
+        if hasattr(self, 'pos_items_tree'):
+            for item in self.pos_items_tree.get_children():
+                self.pos_items_tree.delete(item)
+            items = self.inventory_service.get_all_items() if hasattr(self, 'inventory_service') else []
+            if not items:
+                no_data_frame = tk.Frame(self.pos_items_tree.master, bg=self.colors["bg"])
+                no_data_frame.place(relx=0.5, rely=0.5, anchor="center")
+                tk.Label(no_data_frame, text="No items found", bg=self.colors["bg"], fg="#888", font=("Arial", 14)).pack()
+                ttk.Button(no_data_frame, text="Add Item", style="Primary.TButton").pack(pady=8)
+                self.pos_items_tree.no_data_frame = no_data_frame
+                return
+            if hasattr(self.pos_items_tree, 'no_data_frame'):
+                self.pos_items_tree.no_data_frame.destroy()
         for widget in self.hr_cards_frame.winfo_children():
             widget.destroy()
 
@@ -3280,6 +3309,17 @@ class BizHubDesktopApp:
 
     def refresh_visitors_cards(self):
         """Refresh visitor cards."""
+        # Show 'No data found' if no visitors
+        if hasattr(self, 'vis_cards_frame'):
+            for widget in self.vis_cards_frame.winfo_children():
+                widget.destroy()
+            visitors = self.visitor_service.get_all_visitors() if hasattr(self, 'visitor_service') else []
+            if not visitors:
+                no_data_frame = tk.Frame(self.vis_cards_frame, bg=self.colors["bg"])
+                no_data_frame.pack(expand=True)
+                tk.Label(no_data_frame, text="No visitors found", bg=self.colors["bg"], fg="#888", font=("Arial", 14)).pack()
+                ttk.Button(no_data_frame, text="Add Visitor", style="Primary.TButton").pack(pady=8)
+                return
         if not hasattr(self, "vis_cards_frame"):
             return
         for widget in self.vis_cards_frame.winfo_children():

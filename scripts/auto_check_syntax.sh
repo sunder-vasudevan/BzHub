@@ -4,7 +4,7 @@
 changed_file="$1"
 
 if [[ "$changed_file" == *.py ]]; then
-    python -m py_compile "$changed_file"
+    python3 -m py_compile "$changed_file"
     if [[ $? -ne 0 ]]; then
         echo "Syntax or indentation error detected in $changed_file"
         exit 1

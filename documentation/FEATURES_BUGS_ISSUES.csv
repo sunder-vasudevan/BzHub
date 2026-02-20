@@ -1,3 +1,12 @@
+Lead/Opportunity CRUD,feature,Open,High,,Implement core data model and CRUD operations for leads/opportunities in CRM (create, view, edit, delete, assign, stage tracking).
+Lead/Opportunity Kanban pipeline,feature,Open,Medium,,Add a visual Kanban pipeline to CRM for tracking sales stages (drag-and-drop, stage transitions).
+Lead/Opportunity scoring,feature,Open,Medium,,Implement lead/opportunity scoring and assignment logic in CRM (score calculation, auto-assignment, prioritization).
+Lead/Opportunity automated follow-ups,feature,Open,Medium,,Add automated follow-up reminders and scheduled activities to CRM leads/opportunities.
+Lead/Opportunity email integration,feature,Open,Medium,,Integrate email logging and tracking with CRM contacts and opportunities.
+Lead/Opportunity lost reason analysis,feature,Open,Low,,Track and analyze lost opportunities in CRM (reason capture, reporting).
+Lead/Opportunity custom stages/tags,feature,Open,Medium,,Allow custom pipeline stages and tags for CRM opportunities.
+Lead/Opportunity geo-location,feature,Open,Low,,Add map/geolocation view for CRM leads and opportunities.
+Lead/Opportunity CRM-specific reporting,feature,Open,Medium,,Enhance reporting/dashboard with CRM-specific analytics and pipeline metrics.
 Title,Type,Status,Priority,Assignee,Description
 Refactor UI State Management,feature,Open,High,,Refactor UI state management to prevent widget reference errors and improve stability.
 Zoomed chart x-axis missing,bug,Done,Medium,,X-axis labels missing in zoomed chart view.

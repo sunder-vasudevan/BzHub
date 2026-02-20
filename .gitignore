@@ -1,3 +1,7 @@
+# Ignore large build and dist binaries
+build/bizhub/bizhub.pkg
+dist/bizhub
+dist/bizhub.app/Contents/MacOS/bizhub
 # Ignore log files and folders
 logs/
 
