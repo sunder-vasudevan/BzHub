@@ -1,0 +1,48 @@
+Title,Type,Status,Priority,Assignee,Description
+Refactor UI State Management,feature,Open,High,,Refactor UI state management to prevent widget reference errors and improve stability.
+Zoomed chart x-axis missing,bug,Done,Medium,,X-axis labels missing in zoomed chart view.
+Refactor app for better management,feature,Open,High,,Improve maintainability, modularity, and scalability of the app.
+Notification Center,feature,Open,Medium,,In-app notifications for important events.
+User Roles & Permissions,feature,Open,High,,Multi-user support with role-based access control.
+Customizable Dashboard,feature,Open,Medium,,Personalize dashboard widgets and analytics cards.
+Export/Import Data,feature,Open,Medium,,Enable exporting reports and importing data from CSV.
+Advanced Search & Filters,feature,Open,Medium,,Add global search and advanced filtering.
+Audit Log,feature,Open,Medium,,Track user actions and changes for security.
+Quick Add/Shortcut Bar,feature,Open,Low,,Floating bar for rapid access to frequent actions.
+Theming & Accessibility,feature,Open,Medium,,More color themes, font size options, and accessibility improvements.
+Integration with External Services,feature,Open,Medium,,Connect with email, calendar, accounting software, etc.
+Performance Analytics & ML,feature,Open,Medium,,Deeper analytics, trend predictions, and anomaly detection.
+Modern Tkinter themes,feature,Planned,Medium,,Modernize UI with CustomTkinter/ttkbootstrap.
+Dashboard analytics,feature,Done,High,,Advanced KPI metrics in dashboard.
+Charts and graphs enhancements,feature,Done,Medium,,Enhanced chart readability and value labels.
+Dark mode support,feature,Done,Medium,,Persisted UI preference for dark mode.
+Responsive desktop layout improvements,feature,In Progress,Medium,,Auto-responsive sidebar and top-nav.
+Customer loyalty system,feature,Planned,Medium,,Loyalty points and rewards for customers.
+Supplier management,feature,Planned,Medium,,Manage suppliers and related data.
+Authentication/User Management Model Review,feature,Planned,High,,Re-evaluate authentication and user management approach.
+Advanced reporting,feature,Planned,High,,Add advanced reporting features.
+Inventory forecasting,feature,Planned,High,,Forecast inventory needs.
+Multi-location support,feature,Planned,High,,Support for multiple locations.
+REST API (FastAPI),feature,Planned,High,,Add FastAPI backend for web/API mode.
+Web UI (Flask + Vue),feature,Planned,Medium,,Web interface for BizHub.
+Mobile-responsive design,feature,Planned,Medium,,Responsive web UI.
+Real-time notifications,feature,Planned,Medium,,Real-time notifications in web mode.
+Cloud storage integration,feature,Planned,Medium,,Integrate with cloud storage providers.
+PostgreSQL adapter,feature,Planned,High,,Support PostgreSQL for cloud deployment.
+Multi-tenant support,feature,Planned,High,,Support multiple tenants/companies.
+AWS/GCP deployment,feature,Planned,Medium,,Cloud deployment options.
+Docker containerization,feature,Planned,Medium,,Dockerize the app for deployment.
+Performance optimization for cloud scale,feature,Planned,Medium,,Optimize for cloud scalability.
+Web Compatibility and Central Database,feature,Open,High,,Refactor for web compatibility and central/shared database.
+Supabase Integration for BizHub,feature,Planned,High,,Integrate with Supabase for cloud-based data storage.
+Complete Supabase Migration,feature,Planned,High,,Migrate all business logic to SupabaseService.
+Workspace Reorganization,feature,Open,High,,Reorganize workspace for clarity and maintainability.
+automate PR creation,feature,Open,Medium,,Add a script and workflow to automate pull request creation using GitHub CLI and shell scripting. The script should push the current branch and open a PR to the dev branch with a provided title and body. Document usage examples in the README.
+ODOO: Kanban pipeline for CRM,feature,Open,Medium,,Add a visual Kanban pipeline to CRM for tracking sales stages, inspired by Odoo.
+ODOO: Lead/opportunity scoring,feature,Open,Medium,,Implement lead scoring and assignment in CRM, inspired by Odoo.
+ODOO: Automated follow-ups,feature,Open,Medium,,Add automated follow-up reminders and scheduled activities to CRM, inspired by Odoo.
+ODOO: Email integration for CRM,feature,Open,Medium,,Integrate email logging and tracking with CRM contacts and opportunities, inspired by Odoo.
+ODOO: Lost reason analysis,feature,Open,Low,,Track and analyze lost opportunities in CRM, inspired by Odoo.
+ODOO: Custom stages/tags for CRM,feature,Open,Medium,,Allow custom pipeline stages and tags for CRM opportunities, inspired by Odoo.
+ODOO: Geo-location for leads/opportunities,feature,Open,Low,,Add map/geolocation view for CRM leads and opportunities, inspired by Odoo.
+ODOO: CRM-specific reporting/dashboard,feature,Open,Medium,,Enhance reporting/dashboard with CRM-specific analytics and pipeline metrics, inspired by Odoo.
