@@ -1,8 +1,13 @@
 """SQLite implementation of DatabaseAdapter - for local/desktop use."""
 import sqlite3
+import logging
+from contextlib import contextmanager
 from datetime import datetime
 from src.db.base import DatabaseAdapter
 from src.core import PasswordManager
+from src.config import ADMIN_USERNAME, ADMIN_PASSWORD
+
+logger = logging.getLogger(__name__)
 
 
 class SQLiteAdapter(DatabaseAdapter):
@@ -22,7 +27,7 @@ class SQLiteAdapter(DatabaseAdapter):
             else:
                 return False  # User already exists
         except Exception as e:
-            print(f"Error creating user: {e}")
+            logger.error("Error creating user: %s", e)
             return False
         finally:
             conn.close()
@@ -36,7 +41,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.commit()
             return cursor.rowcount > 0
         except Exception as e:
-            print(f"Error setting user role: {e}")
+            logger.error("Error setting user role: %s", e)
             return False
         finally:
             conn.close()
@@ -45,6 +50,19 @@ class SQLiteAdapter(DatabaseAdapter):
     def __init__(self, db_file: str = "inventory.db"):
         self.db_file = db_file
         self.init_database()
+
+    @contextmanager
+    def _get_conn(self):
+        """Context manager for SQLite connections — handles commit/rollback/close."""
+        conn = sqlite3.connect(self.db_file)
+        try:
+            yield conn, conn.cursor()
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def init_database(self):
         """Initialize SQLite database with all tables."""
@@ -289,8 +307,17 @@ class SQLiteAdapter(DatabaseAdapter):
         except Exception:
             pass
         
-        # Create default admin user if not exists
-        self.create_admin_user('admin', PasswordManager.hash_password('admin123'))
+        # Performance indexes
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_inventory_name ON inventory(item_name)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(sale_date)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_item ON sales(item_name)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_employees_number ON employees(emp_number)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_visitors_date ON visitors(created_at)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log(username)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity_log(timestamp)')
+
+        # Create default admin user if not exists (credentials from env or config)
+        self.create_admin_user(ADMIN_USERNAME, PasswordManager.hash_password(ADMIN_PASSWORD))
         
         conn.commit()
         conn.close()
@@ -310,7 +337,7 @@ class SQLiteAdapter(DatabaseAdapter):
                 )
                 conn.commit()
         except Exception as e:
-            print(f"Error creating admin user: {e}")
+            logger.error("Error creating admin user: %s", e)
         finally:
             conn.close()
     
@@ -353,7 +380,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"Error updating last login: {e}")
+            logger.error("Error updating last login: %s", e)
     
     # === INVENTORY ===
     
@@ -402,7 +429,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding inventory item: {e}")
+            logger.error("Error adding inventory item: %s", e)
             return False
     
     def update_inventory_item(self, item_name: str, quantity: int = None,
@@ -445,7 +472,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating inventory item: {e}")
+            logger.error("Error updating inventory item: %s", e)
             return False
     
     def delete_inventory_item(self, item_name: str):
@@ -458,7 +485,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting inventory item: {e}")
+            logger.error("Error deleting inventory item: %s", e)
             return False
     
     def search_inventory(self, query: str) -> list:
@@ -490,7 +517,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error recording sale: {e}")
+            logger.error("Error recording sale: %s", e)
             return False
     
     def get_sales_by_date(self, date_str: str) -> list:
@@ -592,7 +619,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding employee: {e}")
+            logger.error("Error adding employee: %s", e)
             return False
     
     def get_all_employees(self) -> list:
@@ -657,7 +684,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating employee: {e}")
+            logger.error("Error updating employee: %s", e)
             return False
     
     def delete_employee(self, emp_id: int):
@@ -670,7 +697,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting employee: {e}")
+            logger.error("Error deleting employee: %s", e)
             return False
 
     # === PAYROLL ===
@@ -696,7 +723,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding payroll: {e}")
+            logger.error("Error adding payroll: %s", e)
             return False
 
     def get_all_payrolls(self) -> list:
@@ -747,7 +774,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating payroll: {e}")
+            logger.error("Error updating payroll: %s", e)
             return False
 
     def delete_payroll(self, payroll_id: int):
@@ -760,7 +787,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting payroll: {e}")
+            logger.error("Error deleting payroll: %s", e)
             return False
 
     # === APPRAISALS WORKFLOW ===
@@ -781,7 +808,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error creating appraisal: {e}")
+            logger.error("Error creating appraisal: %s", e)
             return False
 
     def get_all_appraisal_cycles(self) -> list:
@@ -820,7 +847,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating appraisal: {e}")
+            logger.error("Error updating appraisal: %s", e)
             return False
 
     def create_feedback_request(self, appraisal_id: int, requester: str, target_employee_id: int, message: str = ""):
@@ -839,7 +866,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error creating feedback request: {e}")
+            logger.error("Error creating feedback request: %s", e)
             return False
 
     def get_feedback_requests(self) -> list:
@@ -875,7 +902,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating feedback request: {e}")
+            logger.error("Error updating feedback request: %s", e)
             return False
 
     def add_feedback_entry(self, appraisal_id: int, from_employee_id: int, to_employee_id: int,
@@ -895,7 +922,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding feedback: {e}")
+            logger.error("Error adding feedback: %s", e)
             return False
 
     def get_feedback_entries(self) -> list:
@@ -923,7 +950,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding appraisal: {e}")
+            logger.error("Error adding appraisal: %s", e)
             return False
     
     def get_employee_appraisals(self, employee_id: int) -> list:
@@ -951,7 +978,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding goal: {e}")
+            logger.error("Error adding goal: %s", e)
             return False
     
     def get_employee_goals(self, employee_id: int) -> list:
@@ -981,7 +1008,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding visitor: {e}")
+            logger.error("Error adding visitor: %s", e)
             return False
     
     def get_all_visitors(self) -> list:
@@ -1021,7 +1048,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating visitor: {e}")
+            logger.error("Error updating visitor: %s", e)
             return False
     
     def delete_visitor(self, visitor_id: int):
@@ -1034,7 +1061,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting visitor: {e}")
+            logger.error("Error deleting visitor: %s", e)
             return False
     
     def search_visitors(self, query: str) -> list:
@@ -1067,7 +1094,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error saving email config: {e}")
+            logger.error("Error saving email config: %s", e)
             return False
     
     def get_email_config(self) -> dict:
@@ -1104,7 +1131,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error saving company info: {e}")
+            logger.error("Error saving company info: %s", e)
             return False
     
     def get_company_info(self) -> dict:
@@ -1138,7 +1165,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"Error logging activity: {e}")
+            logger.error("Error logging activity: %s", e)
     
     def get_activity_log(self, username: str = None) -> list:
         """Get activity log, optionally filtered by user."""

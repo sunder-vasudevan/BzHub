@@ -8,12 +8,24 @@ Usage:
 """
 import sys
 import os
+import logging
 
 # Ensure src is in path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import argparse
-from src.config import MODE, APP_NAME, APP_VERSION
+from src.config import MODE, APP_NAME, APP_VERSION, DEBUG
+
+# Configure logging for the whole app
+logging.basicConfig(
+    level=logging.DEBUG if DEBUG else logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("bizhub.log", encoding="utf-8"),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 
 def main():

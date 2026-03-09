@@ -1,0 +1,3 @@
+Module,Item Type,Title,Description,Priority,Status,Created At,Notes
+Core,Feature,Inventory Service,Service layer for inventory CRUD and calculations,High,Planned,,
+UI,Feature,Modern Inventory Tab,Refined inventory UI backed only by services,Medium,Planned,,
