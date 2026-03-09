@@ -19,7 +19,9 @@ class PasswordManager:
 
 class CurrencyFormatter:
     """Format currency values."""
-    
+
+    SYMBOL: str = "₹"
+
     @staticmethod
     def format_currency(value: float, symbol: str = "₹") -> str:
         """Format a number as currency."""
@@ -27,6 +29,15 @@ class CurrencyFormatter:
             return f"{symbol}{float(value):.2f}"
         except (ValueError, TypeError):
             return f"{symbol}0.00"
+
+    @staticmethod
+    def parse_currency(text: str) -> float:
+        """Strip any leading currency symbol and return a float. Returns 0.0 on failure."""
+        try:
+            cleaned = text.strip().lstrip("₹$€£¥₩₦₱").strip()
+            return float(cleaned)
+        except (ValueError, TypeError):
+            return 0.0
 
 
 class InventoryCalculator:

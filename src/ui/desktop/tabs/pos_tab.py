@@ -231,16 +231,24 @@ class POSTab(BaseTab):
         if not self._selected_item:
             messagebox.showerror("POS", "Select a cart item")
             return
-        messagebox.showwarning("Caution", "This will remove the selected item from the cart.")
-        if not messagebox.askyesno("Confirm", "Remove the selected cart item?"):
+        if not messagebox.askyesno(
+            "Remove Item",
+            f"Remove '{self._selected_item}' from the cart?",
+            icon="warning",
+        ):
             return
         self._cart = [i for i in self._cart if i["item_name"] != self._selected_item]
         self._selected_item = None
         self._refresh_cart()
 
     def _clear_cart(self):
-        messagebox.showwarning("Caution", "This will clear all items from the cart.")
-        if not messagebox.askyesno("Confirm", "Clear the entire cart?"):
+        if not self._cart:
+            return
+        if not messagebox.askyesno(
+            "Clear Cart",
+            "Remove all items from the cart?",
+            icon="warning",
+        ):
             return
         self._cart = []
         self._selected_item = None

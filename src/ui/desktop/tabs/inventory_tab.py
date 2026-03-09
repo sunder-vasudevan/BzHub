@@ -230,9 +230,9 @@ class InventoryTab(BaseTab):
         self._threshold.delete(0, tk.END)
         self._threshold.insert(0, vals[2])
         self._cost.delete(0, tk.END)
-        self._cost.insert(0, str(vals[3]).replace("₹", ""))
+        self._cost.insert(0, CurrencyFormatter.parse_currency(str(vals[3])))
         self._sale.delete(0, tk.END)
-        self._sale.insert(0, str(vals[4]).replace("₹", ""))
+        self._sale.insert(0, CurrencyFormatter.parse_currency(str(vals[4])))
         self._desc.delete(0, tk.END)
         self._desc.insert(0, vals[5])
         details = self.app.inventory_service.get_item(vals[0])
@@ -289,7 +289,37 @@ class InventoryTab(BaseTab):
             messagebox.showerror("Export", f"Failed to export: {e}")
 
     def _export_excel(self):
-        messagebox.showinfo("Export", "Export to Excel not yet implemented.")
+        try:
+            import openpyxl
+        except ImportError:
+            messagebox.showerror(
+                "Missing Dependency",
+                "openpyxl is required for Excel export.\n\nInstall it with:\n  pip install openpyxl",
+            )
+            return
+        items = self.app.inventory_service.get_all_items()
+        if not items:
+            messagebox.showwarning("Export", "No inventory data to export.")
+            return
+        path = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel Files", "*.xlsx"), ("All Files", "*.*")],
+            title="Export Inventory to Excel",
+        )
+        if not path:
+            return
+        try:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Inventory"
+            ws.append(["Item Name", "Quantity", "Threshold",
+                        "Cost Price", "Sale Price", "Description"])
+            for item in items:
+                ws.append(list(item))
+            wb.save(path)
+            messagebox.showinfo("Export", f"Inventory exported to {path}")
+        except Exception as e:
+            messagebox.showerror("Export", f"Failed to export: {e}")
 
     def _import_csv(self):
         path = filedialog.askopenfilename(
@@ -326,4 +356,50 @@ class InventoryTab(BaseTab):
             messagebox.showerror("Import", f"Failed to import: {e}")
 
     def _import_excel(self):
-        messagebox.showinfo("Import", "Import from Excel not yet implemented.")
+        try:
+            import openpyxl
+        except ImportError:
+            messagebox.showerror(
+                "Missing Dependency",
+                "openpyxl is required for Excel import.\n\nInstall it with:\n  pip install openpyxl",
+            )
+            return
+        path = filedialog.askopenfilename(
+            filetypes=[("Excel Files", "*.xlsx *.xls"), ("All Files", "*.*")],
+            title="Import Inventory from Excel",
+        )
+        if not path:
+            return
+        imported = skipped = 0
+        try:
+            wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+            ws = wb.active
+            rows = list(ws.iter_rows(values_only=True))
+            # Skip header row if first cell looks like a label
+            start = 1 if rows and str(rows[0][0]).lower() in ("item name", "item_name", "name") else 0
+            svc = self.app.inventory_service
+            for row in rows[start:]:
+                try:
+                    name = str(row[0]).strip() if row[0] else ""
+                    qty  = int(row[1] or 0)
+                    thr  = int(row[2] or 0)
+                    cost = float(row[3] or 0)
+                    sale = float(row[4] or 0)
+                    desc = str(row[5] or "")
+                    if not name:
+                        skipped += 1
+                        continue
+                    if svc.update_item(name, quantity=qty, threshold=thr,
+                                       cost_price=cost, sale_price=sale, description=desc):
+                        imported += 1
+                    elif svc.add_item(name, qty, thr, cost, sale, desc):
+                        imported += 1
+                    else:
+                        skipped += 1
+                except Exception:
+                    skipped += 1
+            wb.close()
+            self.refresh()
+            messagebox.showinfo("Import", f"Imported: {imported}, Skipped: {skipped}")
+        except Exception as e:
+            messagebox.showerror("Import", f"Failed to import: {e}")

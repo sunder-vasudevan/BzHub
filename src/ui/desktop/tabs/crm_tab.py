@@ -1,8 +1,9 @@
-"""CRM tab — container that hosts Inventory, POS, Reports, Bills, and Visitors sub-tabs."""
+"""Operations tab — container for CRM, Contacts, Inventory, POS, Reports, Bills, and Visitors sub-tabs."""
 import tkinter as tk
 from tkinter import ttk
 
 from .base_tab import BaseTab
+from .crm_leads_tab import CRMLeadsTab
 from .inventory_tab import InventoryTab
 from .pos_tab import POSTab
 from .reports_tab import ReportsTab
@@ -12,14 +13,15 @@ from .visitors_tab import VisitorsTab
 
 class CRMTab(BaseTab):
     """
-    CRM module container.
+    Operations module container.
 
     Hosts a nested ttk.Notebook with:
+        - Contacts   (full CRUD contact directory)
         - Inventory  (stock management)
         - POS        (point-of-sale / cart checkout)
         - Reports    (analytics — admin only)
         - Bills      (sales timeline)
-        - Visitors   (contact cards)
+        - Visitors   (walk-in visitor log)
 
     Sub-tabs are accessible via:
         crm_tab.get_sub_tab("POS")           → POSTab instance
@@ -39,7 +41,7 @@ class CRMTab(BaseTab):
     # ------------------------------------------------------------------
 
     def _build(self):
-        self.notebook.add(self.frame, text="📇 CRM")
+        self.notebook.add(self.frame, text="🗂 Operations")
 
         container = tk.Frame(self.frame, bg=self.colors["bg"])
         container.pack(fill="both", expand=True)
@@ -47,7 +49,19 @@ class CRMTab(BaseTab):
         self.crm_notebook = ttk.Notebook(container)
         self.crm_notebook.pack(fill="both", expand=True)
 
-        # Always-visible sub-tabs
+        # CRM is the first sub-tab (leads pipeline + contacts)
+        self._add_sub_tab(
+            "CRM",
+            CRMLeadsTab(self.crm_notebook, self.app),
+        )
+
+        # Contacts directory (walk-in contacts/visitors used as contacts)
+        self._add_sub_tab(
+            "Contacts",
+            VisitorsTab(self.crm_notebook, self.app, tab_label="📇 Contacts"),
+        )
+
+        # Operational sub-tabs
         self._add_sub_tab("Inventory", InventoryTab(self.crm_notebook, self.app))
         self._add_sub_tab("POS",       POSTab(self.crm_notebook, self.app))
 
@@ -56,7 +70,12 @@ class CRMTab(BaseTab):
             self._add_sub_tab("Reports", ReportsTab(self.crm_notebook, self.app))
 
         self._add_sub_tab("Bills",    BillsTab(self.crm_notebook, self.app))
-        self._add_sub_tab("Visitors", VisitorsTab(self.crm_notebook, self.app))
+
+        # Walk-in visitor log (separate from Contacts)
+        self._add_sub_tab(
+            "Visitors",
+            VisitorsTab(self.crm_notebook, self.app, tab_label="🚶 Visitors"),
+        )
 
     def _add_sub_tab(self, name: str, tab_instance: BaseTab):
         self._sub_tabs[name] = tab_instance

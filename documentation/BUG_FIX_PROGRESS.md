@@ -113,7 +113,130 @@ Of the 3 "critical bugs" from the review:
   - `app.pos_tab` set on main app after CRMTab build — used by BillsTab for receipt delegation
 - All 13 files pass `python3 -m py_compile` with no errors
 
+---
+
+### [UPDATE 4] 2026-03-09 — UI fixes and CRM restructure
+
+**1. Visitors tab — full CRUD** ✅
+- File: `src/ui/desktop/tabs/visitors_tab.py`
+- Cards were read-only. Added **+ New Contact** button, **Edit** and **Delete** per card.
+- `visitor_service` methods were already implemented — UI simply wasn't calling them.
+
+**2. Double-modal confirmations removed** ✅
+- File: `src/ui/desktop/tabs/pos_tab.py`
+- `_remove_cart_item` and `_clear_cart` previously showed `showwarning` + `askyesno` (two dialogs).
+- Replaced with a single `askyesno(icon="warning")`.
+
+**3. Bills date filter** ✅
+- File: `src/ui/desktop/tabs/bills_tab.py`
+- Added **Today / Last 7 Days / Last 30 Days / All** period selector combobox.
+- Added item/user text search.
+- Added day-total summary label on each date group header.
+
+**4. Excel import/export implemented** ✅
+- File: `src/ui/desktop/tabs/inventory_tab.py`
+- Both Export Excel and Import Excel fully implemented using `openpyxl`.
+- If `openpyxl` is not installed, shows a clear error: `pip install openpyxl`.
+- Note: `openpyxl` is not currently in the venv — install to activate.
+
+**5. Currency parsing fix** ✅
+- Files: `src/core/__init__.py`, `src/ui/desktop/tabs/inventory_tab.py`
+- Added `CurrencyFormatter.parse_currency(text)` — strips any leading currency symbol and returns `float`.
+- `InventoryTab._on_select` now uses this instead of hardcoded `.replace("₹", "")`.
+
+**6. CRM renamed to Operations + Contacts sub-tab added** ✅
+- Files: `src/ui/desktop/tabs/crm_tab.py`, `src/ui/desktop/bizhub_desktop.py`
+- Nav button renamed: "📇 CRM" → "🗂 Operations".
+- **Contacts** added as first sub-tab in Operations — full CRUD contact directory.
+- **Visitors** kept as a separate sub-tab for walk-in log.
+- Help context mapping and default quick actions updated.
+- Default sidebar quick actions now include **📇 Contacts** as first item.
+
+---
+
+---
+
+### [UPDATE 5] 2026-03-09 — CRM + API + Web UI (v2.0)
+
+#### Phase 1: Full CRM Module (Tkinter Desktop)
+
+**New DB tables** (`src/db/sqlite_adapter.py`):
+- `crm_contacts` — CRM contact directory (name, company, email, phone, source, status, notes)
+- `crm_leads` — CRM deals (contact_id FK, title, stage, value, probability, owner, notes)
+- `crm_activities` — Activity log per lead (type: call/email/meeting/note, note, due_date, done)
+- Indexes: `idx_crm_leads_stage`, `idx_crm_leads_contact`, `idx_crm_activities_lead`
+
+**New DB methods** (11 methods added to `SQLiteAdapter`):
+- `add_crm_contact`, `get_crm_contacts`, `update_crm_contact`, `delete_crm_contact`
+- `add_crm_lead`, `get_crm_leads`, `update_crm_lead`, `delete_crm_lead`
+- `add_crm_activity`, `get_crm_activities`, `update_crm_activity`
+
+**New service** (`src/services/crm_service.py`):
+- `CRMService` with full contact and lead CRUD
+- `get_pipeline_summary()` → dict[stage, list[leads]]
+- `get_conversion_rate()` → float (Won/closed %)
+- `get_pipeline_value()` → float (sum of non-Lost lead values)
+- `advance_lead_stage()` — moves lead to next stage in pipeline
+- Registered in `src/services/__init__.py`
+
+**New UI** (`src/ui/desktop/tabs/crm_leads_tab.py`):
+- `CRMLeadsTab(BaseTab)` — two sub-views:
+  - **Contacts**: searchable Treeview table, Add/Edit/Delete via dialog
+  - **Pipeline**: 6-column Kanban board (New/Contacted/Qualified/Proposal/Won/Lost)
+    - Lead cards show: title, contact, value (currency format), owner
+    - "Move →" advances to next stage
+    - "+ Add" button per column
+    - Double-click opens Lead Detail dialog
+- **Lead Detail dialog**: editable fields (title, stage, value, probability, owner, notes), activity log with type icons, "Add Activity" form, Save/Delete/Close buttons
+
+**Wiring**:
+- `crm_tab.py`: CRMLeadsTab added as first sub-tab ("🎯 CRM") in Operations
+- `bizhub_desktop.py`: `self.crm_service = CRMService(self.db)` added
+
+#### Phase 2: FastAPI REST API (`--api` mode)
+
+**New package**: `src/api/`
+- `src/api/__init__.py` — package marker
+- `src/api/main.py` — FastAPI app with CORS middleware, all routers registered
+- `src/api/deps.py` — shared DB adapter and service instances (singleton pattern)
+- `src/api/routers/`
+  - `auth.py` — `POST /auth/login` → returns `{user, role, token}`
+  - `inventory.py` — `GET/POST /inventory`, `PUT/DELETE /inventory/{name}`
+  - `sales.py` — `GET /sales`, `POST /sales/checkout` (cart checkout)
+  - `contacts.py` — `GET/POST /contacts`, `PUT/DELETE /contacts/{id}`
+  - `leads.py` — `GET/POST /leads`, `GET /leads/pipeline`, `PUT/DELETE /leads/{id}`
+  - `dashboard.py` — `GET /dashboard/kpis`, `GET /dashboard/trend`
+
+**Wiring**:
+- `bizhub.py`: `--api` flag now launches `uvicorn src.api.main:app`
+- `.env.example`: Added `API_HOST`, `API_PORT`, `CORS_ORIGINS`
+
+**Install**: `pip install fastapi 'uvicorn[standard]'`
+
+#### Phase 3: Next.js Web Frontend
+
+**Location**: `bzhub_web/bzhub_web/`
+
+**Files created**:
+- `package.json`, `tsconfig.json`, `tailwind.config.ts`, `postcss.config.js`, `next.config.js`
+- `src/app/globals.css` — Tailwind base styles
+- `src/app/layout.tsx` — Root layout with metadata
+- `src/lib/api.ts` — `apiFetch()` and typed API helpers
+- `src/components/TopNav.tsx` — Nav bar with dark mode toggle + logout
+- `src/app/page.tsx` — Login page (POST /auth/login → localStorage → redirect)
+- `src/app/dashboard/page.tsx` — 6 KPI cards + 14-day sales trend table
+- `src/app/operations/page.tsx` — Contacts/CRM/Inventory/POS/Bills tab hub
+- `src/app/crm/page.tsx` — Full-screen Kanban pipeline with Lead detail modal
+- `.env.local.example` — `NEXT_PUBLIC_API_URL=http://localhost:8000`
+- `bzhub_web/README.md` — Setup + run instructions
+
+**Design**: Purple primary (#6D28D9), surface background (#F5F6FA), white cards with shadow-sm, rounded-xl
+
+---
+
 ## What's Next
-- Build real CRM (contacts, leads, pipeline)
+- Install `openpyxl`: `pip install openpyxl` (for Excel import/export)
+- Install FastAPI: `pip install fastapi 'uvicorn[standard]'` (for API mode)
+- Run web frontend: `cd bzhub_web/bzhub_web && npm run dev`
 
 ---

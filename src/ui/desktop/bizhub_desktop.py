@@ -22,7 +22,7 @@ from src.db import SQLiteAdapter
 from src.services import (
     AuthService, InventoryService, POSService, HRService,
     VisitorService, EmailService, ActivityService, CompanyService, AnalyticsService,
-    PayrollService, AppraisalService,
+    PayrollService, AppraisalService, CRMService,
 )
 from src.ui.desktop.tabs import DashboardTab, CRMTab, HRTab, SettingsTab
 
@@ -53,6 +53,7 @@ class BizHubDesktopApp:
         self.activity_service    = ActivityService(self.db)
         self.company_service     = CompanyService(self.db)
         self.analytics_service   = AnalyticsService(self.db)
+        self.crm_service         = CRMService(self.db)
         logger.debug("All services initialized")
 
         # Session state
@@ -242,10 +243,10 @@ class BizHubDesktopApp:
         self.nav_buttons: dict = {}
         self.nav_button_texts: dict = {}
         nav_items = [
-            ("📊 Dashboard", "Dashboard", self.current_role == "admin"),
-            ("📇 CRM",       "CRM",       True),
-            ("👔 HR",        "HR",        self.current_role == "admin"),
-            ("⚙️ Settings",  "Settings",  self.current_role == "admin"),
+            ("📊 Dashboard",   "Dashboard",   self.current_role == "admin"),
+            ("🗂 Operations",  "CRM",         True),
+            ("👔 HR",          "HR",          self.current_role == "admin"),
+            ("⚙️ Settings",    "Settings",    self.current_role == "admin"),
         ]
         for label, base_name, visible in nav_items:
             if not visible:
@@ -354,7 +355,7 @@ class BizHubDesktopApp:
                 self._crm_tab.select_sub_tab(name)
 
             # Refresh data for tabs that support it
-            refreshable = {"Dashboard", "HR", "Bills", "Visitors", "Reports"}
+            refreshable = {"Dashboard", "HR", "Bills", "Visitors", "Contacts", "Reports"}
             if name in refreshable and name in self._tab_instances:
                 self._tab_instances[name].refresh()
 
@@ -413,19 +414,20 @@ class BizHubDesktopApp:
 
     def _get_help_section_title(self, context: str) -> str:
         mapping = {
-            "Dashboard":      "Dashboard",
-            "CRM":            "CRM",
-            "CRM/Inventory":  "Inventory (CRM)",
-            "CRM/POS":        "POS (CRM)",
-            "CRM/Reports":    "Reports (CRM)",
-            "CRM/Bills":      "Bills (CRM)",
-            "CRM/Visitors":   "Visitors (CRM)",
-            "HR":             "HR",
-            "HR/Employees":   "Employees (HR)",
-            "HR/Payroll":     "Payroll (HR)",
-            "HR/Appraisals":  "Appraisals (HR)",
-            "HR/Feedback":    "Feedback (HR)",
-            "Settings":       "Settings",
+            "Dashboard":         "Dashboard",
+            "CRM":               "Operations",
+            "CRM/Contacts":      "Contacts",
+            "CRM/Inventory":     "Inventory",
+            "CRM/POS":           "POS",
+            "CRM/Reports":       "Reports",
+            "CRM/Bills":         "Bills",
+            "CRM/Visitors":      "Visitors",
+            "HR":                "HR",
+            "HR/Employees":      "Employees (HR)",
+            "HR/Payroll":        "Payroll (HR)",
+            "HR/Appraisals":     "Appraisals (HR)",
+            "HR/Feedback":       "Feedback (HR)",
+            "Settings":          "Settings",
         }
         return mapping.get(context, "")
 
@@ -547,6 +549,7 @@ class BizHubDesktopApp:
 
     def _default_quick_actions(self) -> list:
         return [
+            {"label": "📇 Contacts",    "target": "Contacts"},
             {"label": "➕ Add Item",    "target": "Inventory"},
             {"label": "🧾 New Sale",    "target": "POS"},
             {"label": "⚠️ Low Stock",  "target": "low_stock"},
