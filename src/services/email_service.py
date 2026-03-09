@@ -1,7 +1,10 @@
 """Email and notification services."""
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+logger = logging.getLogger(__name__)
 
 
 class EmailService:
@@ -47,7 +50,7 @@ class EmailService:
             
             return True
         except Exception as e:
-            print(f"Error sending email: {e}")
+            logger.error("Error sending email: %s", e)
             return False
     
     def send_low_stock_alerts(self, low_stock_items: list) -> bool:
@@ -65,5 +68,5 @@ class EmailService:
         try:
             return self.send_email("BizHub - Low Stock Alerts", body)
         except Exception as e:
-            print(f"Error sending low stock alerts: {e}")
+            logger.error("Error sending low stock alerts: %s", e)
             return False

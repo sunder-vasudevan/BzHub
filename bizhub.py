@@ -8,12 +8,24 @@ Usage:
 """
 import sys
 import os
+import logging
 
 # Ensure src is in path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import argparse
-from src.config import MODE, APP_NAME, APP_VERSION
+from src.config import MODE, APP_NAME, APP_VERSION, DEBUG
+
+# Configure logging for the whole app
+logging.basicConfig(
+    level=logging.DEBUG if DEBUG else logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("bizhub.log", encoding="utf-8"),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -29,8 +41,20 @@ def main():
     
     try:
         if args.api:
-            print("API mode not yet implemented")
-            sys.exit(1)
+            import os
+            os.environ.setdefault("DB_FILE", args.db)
+            try:
+                import uvicorn
+                from src.api.main import app
+                api_host = os.getenv("API_HOST", "0.0.0.0")
+                api_port = int(os.getenv("API_PORT", "8000"))
+                print(f"Starting BizHub API on http://localhost:{api_port}")
+                print(f"API docs available at http://localhost:{api_port}/docs")
+                uvicorn.run(app, host=api_host, port=api_port)
+            except ImportError as exc:
+                print(f"FastAPI/uvicorn not installed: {exc}")
+                print("Install with: pip install fastapi 'uvicorn[standard]'")
+                sys.exit(1)
         elif args.web:
             print("Web mode not yet implemented")
             sys.exit(1)

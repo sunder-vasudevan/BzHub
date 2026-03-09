@@ -25,9 +25,9 @@ CLOUD_API_URL = os.getenv('CLOUD_API_URL', '')
 # Debug mode
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
-# Default admin credentials
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD = 'admin123'
+# Default admin credentials — override via environment variables in production
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 
 # Application settings
 APP_NAME = 'BzHub'

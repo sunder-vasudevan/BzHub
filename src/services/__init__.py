@@ -9,6 +9,7 @@ from src.services.misc_service import ActivityService, CompanyService
 from src.services.analytics_service import AnalyticsService
 from src.services.payroll_service import PayrollService
 from src.services.appraisal_service import AppraisalService
+from src.services.crm_service import CRMService
 
 __all__ = [
     'AuthService',
@@ -21,5 +22,6 @@ __all__ = [
     'CompanyService',
     'AnalyticsService',
     'PayrollService',
-    'AppraisalService'
+    'AppraisalService',
+    'CRMService',
 ]

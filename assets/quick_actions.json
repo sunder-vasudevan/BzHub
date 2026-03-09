@@ -1,6 +1,10 @@
 [
   {
-    "label": "Inventory",
-    "target": "Inventory"
+    "label": "Visitors",
+    "target": "Visitors"
+  },
+  {
+    "label": "Bills",
+    "target": "Bills"
   }
 ]

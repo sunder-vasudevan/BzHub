@@ -1,8 +1,13 @@
 """SQLite implementation of DatabaseAdapter - for local/desktop use."""
 import sqlite3
+import logging
+from contextlib import contextmanager
 from datetime import datetime
 from src.db.base import DatabaseAdapter
 from src.core import PasswordManager
+from src.config import ADMIN_USERNAME, ADMIN_PASSWORD
+
+logger = logging.getLogger(__name__)
 
 
 class SQLiteAdapter(DatabaseAdapter):
@@ -22,7 +27,7 @@ class SQLiteAdapter(DatabaseAdapter):
             else:
                 return False  # User already exists
         except Exception as e:
-            print(f"Error creating user: {e}")
+            logger.error("Error creating user: %s", e)
             return False
         finally:
             conn.close()
@@ -36,7 +41,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.commit()
             return cursor.rowcount > 0
         except Exception as e:
-            print(f"Error setting user role: {e}")
+            logger.error("Error setting user role: %s", e)
             return False
         finally:
             conn.close()
@@ -45,6 +50,19 @@ class SQLiteAdapter(DatabaseAdapter):
     def __init__(self, db_file: str = "inventory.db"):
         self.db_file = db_file
         self.init_database()
+
+    @contextmanager
+    def _get_conn(self):
+        """Context manager for SQLite connections — handles commit/rollback/close."""
+        conn = sqlite3.connect(self.db_file)
+        try:
+            yield conn, conn.cursor()
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def init_database(self):
         """Initialize SQLite database with all tables."""
@@ -289,8 +307,64 @@ class SQLiteAdapter(DatabaseAdapter):
         except Exception:
             pass
         
-        # Create default admin user if not exists
-        self.create_admin_user('admin', PasswordManager.hash_password('admin123'))
+        # CRM Contacts table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS crm_contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                company TEXT DEFAULT '',
+                email TEXT DEFAULT '',
+                phone TEXT DEFAULT '',
+                source TEXT DEFAULT '',
+                status TEXT DEFAULT 'active',
+                notes TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        ''')
+
+        # CRM Leads table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS crm_leads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contact_id INTEGER REFERENCES crm_contacts(id),
+                title TEXT NOT NULL,
+                stage TEXT DEFAULT 'New',
+                value REAL DEFAULT 0,
+                probability INTEGER DEFAULT 0,
+                owner TEXT DEFAULT '',
+                notes TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )
+        ''')
+
+        # CRM Activities table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS crm_activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lead_id INTEGER REFERENCES crm_leads(id),
+                type TEXT DEFAULT 'note',
+                note TEXT DEFAULT '',
+                due_date TEXT DEFAULT '',
+                done INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        ''')
+
+        # Performance indexes
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_inventory_name ON inventory(item_name)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(sale_date)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_item ON sales(item_name)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_employees_number ON employees(emp_number)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_visitors_date ON visitors(created_at)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log(username)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity_log(timestamp)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_crm_leads_stage ON crm_leads(stage)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_crm_leads_contact ON crm_leads(contact_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_crm_activities_lead ON crm_activities(lead_id)')
+
+        # Create default admin user if not exists (credentials from env or config)
+        self.create_admin_user(ADMIN_USERNAME, PasswordManager.hash_password(ADMIN_PASSWORD))
         
         conn.commit()
         conn.close()
@@ -310,7 +384,7 @@ class SQLiteAdapter(DatabaseAdapter):
                 )
                 conn.commit()
         except Exception as e:
-            print(f"Error creating admin user: {e}")
+            logger.error("Error creating admin user: %s", e)
         finally:
             conn.close()
     
@@ -353,7 +427,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"Error updating last login: {e}")
+            logger.error("Error updating last login: %s", e)
     
     # === INVENTORY ===
     
@@ -402,7 +476,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding inventory item: {e}")
+            logger.error("Error adding inventory item: %s", e)
             return False
     
     def update_inventory_item(self, item_name: str, quantity: int = None,
@@ -445,7 +519,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating inventory item: {e}")
+            logger.error("Error updating inventory item: %s", e)
             return False
     
     def delete_inventory_item(self, item_name: str):
@@ -458,7 +532,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting inventory item: {e}")
+            logger.error("Error deleting inventory item: %s", e)
             return False
     
     def search_inventory(self, query: str) -> list:
@@ -490,7 +564,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error recording sale: {e}")
+            logger.error("Error recording sale: %s", e)
             return False
     
     def get_sales_by_date(self, date_str: str) -> list:
@@ -592,7 +666,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding employee: {e}")
+            logger.error("Error adding employee: %s", e)
             return False
     
     def get_all_employees(self) -> list:
@@ -657,7 +731,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating employee: {e}")
+            logger.error("Error updating employee: %s", e)
             return False
     
     def delete_employee(self, emp_id: int):
@@ -670,7 +744,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting employee: {e}")
+            logger.error("Error deleting employee: %s", e)
             return False
 
     # === PAYROLL ===
@@ -696,7 +770,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding payroll: {e}")
+            logger.error("Error adding payroll: %s", e)
             return False
 
     def get_all_payrolls(self) -> list:
@@ -747,7 +821,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating payroll: {e}")
+            logger.error("Error updating payroll: %s", e)
             return False
 
     def delete_payroll(self, payroll_id: int):
@@ -760,7 +834,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting payroll: {e}")
+            logger.error("Error deleting payroll: %s", e)
             return False
 
     # === APPRAISALS WORKFLOW ===
@@ -781,7 +855,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error creating appraisal: {e}")
+            logger.error("Error creating appraisal: %s", e)
             return False
 
     def get_all_appraisal_cycles(self) -> list:
@@ -820,7 +894,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating appraisal: {e}")
+            logger.error("Error updating appraisal: %s", e)
             return False
 
     def create_feedback_request(self, appraisal_id: int, requester: str, target_employee_id: int, message: str = ""):
@@ -839,7 +913,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error creating feedback request: {e}")
+            logger.error("Error creating feedback request: %s", e)
             return False
 
     def get_feedback_requests(self) -> list:
@@ -875,7 +949,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating feedback request: {e}")
+            logger.error("Error updating feedback request: %s", e)
             return False
 
     def add_feedback_entry(self, appraisal_id: int, from_employee_id: int, to_employee_id: int,
@@ -895,7 +969,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding feedback: {e}")
+            logger.error("Error adding feedback: %s", e)
             return False
 
     def get_feedback_entries(self) -> list:
@@ -923,7 +997,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding appraisal: {e}")
+            logger.error("Error adding appraisal: %s", e)
             return False
     
     def get_employee_appraisals(self, employee_id: int) -> list:
@@ -951,7 +1025,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding goal: {e}")
+            logger.error("Error adding goal: %s", e)
             return False
     
     def get_employee_goals(self, employee_id: int) -> list:
@@ -981,7 +1055,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding visitor: {e}")
+            logger.error("Error adding visitor: %s", e)
             return False
     
     def get_all_visitors(self) -> list:
@@ -1021,7 +1095,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error updating visitor: {e}")
+            logger.error("Error updating visitor: %s", e)
             return False
     
     def delete_visitor(self, visitor_id: int):
@@ -1034,7 +1108,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting visitor: {e}")
+            logger.error("Error deleting visitor: %s", e)
             return False
     
     def search_visitors(self, query: str) -> list:
@@ -1067,7 +1141,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error saving email config: {e}")
+            logger.error("Error saving email config: %s", e)
             return False
     
     def get_email_config(self) -> dict:
@@ -1104,7 +1178,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.close()
             return True
         except Exception as e:
-            print(f"Error saving company info: {e}")
+            logger.error("Error saving company info: %s", e)
             return False
     
     def get_company_info(self) -> dict:
@@ -1138,7 +1212,7 @@ class SQLiteAdapter(DatabaseAdapter):
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"Error logging activity: {e}")
+            logger.error("Error logging activity: %s", e)
     
     def get_activity_log(self, username: str = None) -> list:
         """Get activity log, optionally filtered by user."""
@@ -1155,6 +1229,207 @@ class SQLiteAdapter(DatabaseAdapter):
         except Exception:
             return []
     
+    # === CRM ===
+
+    def add_crm_contact(self, name: str, company: str = '', email: str = '',
+                        phone: str = '', source: str = '', notes: str = '') -> int:
+        """Add a new CRM contact. Returns new id or -1 on error."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO crm_contacts (name, company, email, phone, source, notes) VALUES (?, ?, ?, ?, ?, ?)',
+                (name, company, email, phone, source, notes)
+            )
+            new_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            return new_id
+        except Exception as e:
+            logger.error("Error adding CRM contact: %s", e)
+            return -1
+
+    def get_crm_contacts(self, search: str = None) -> list:
+        """Get all CRM contacts, optionally filtered by search string."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            if search:
+                q = f"%{search}%"
+                cursor.execute(
+                    'SELECT * FROM crm_contacts WHERE name LIKE ? OR company LIKE ? OR email LIKE ? OR phone LIKE ? ORDER BY name',
+                    (q, q, q, q)
+                )
+            else:
+                cursor.execute('SELECT * FROM crm_contacts ORDER BY name')
+            rows = cursor.fetchall()
+            conn.close()
+            return rows
+        except Exception as e:
+            logger.error("Error getting CRM contacts: %s", e)
+            return []
+
+    def update_crm_contact(self, contact_id: int, **kwargs) -> bool:
+        """Update a CRM contact by id."""
+        try:
+            allowed = {'name', 'company', 'email', 'phone', 'source', 'status', 'notes'}
+            updates = []
+            values = []
+            for key, value in kwargs.items():
+                if key in allowed and value is not None:
+                    updates.append(f'{key} = ?')
+                    values.append(value)
+            if not updates:
+                return True
+            values.append(contact_id)
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute(f'UPDATE crm_contacts SET {", ".join(updates)} WHERE id = ?', values)
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error("Error updating CRM contact: %s", e)
+            return False
+
+    def delete_crm_contact(self, contact_id: int) -> bool:
+        """Delete a CRM contact by id."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM crm_contacts WHERE id = ?', (contact_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error("Error deleting CRM contact: %s", e)
+            return False
+
+    def add_crm_lead(self, contact_id: int, title: str, stage: str = 'New',
+                     value: float = 0, probability: int = 0, owner: str = '', notes: str = '') -> int:
+        """Add a new CRM lead. Returns new id or -1 on error."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO crm_leads (contact_id, title, stage, value, probability, owner, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                (contact_id, title, stage, value, probability, owner, notes)
+            )
+            new_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            return new_id
+        except Exception as e:
+            logger.error("Error adding CRM lead: %s", e)
+            return -1
+
+    def get_crm_leads(self, stage: str = None) -> list:
+        """Get CRM leads with contact info, optionally filtered by stage."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            if stage:
+                cursor.execute(
+                    '''SELECT l.*, c.name as contact_name FROM crm_leads l
+                       LEFT JOIN crm_contacts c ON l.contact_id = c.id
+                       WHERE l.stage = ? ORDER BY l.created_at DESC''',
+                    (stage,)
+                )
+            else:
+                cursor.execute(
+                    '''SELECT l.*, c.name as contact_name FROM crm_leads l
+                       LEFT JOIN crm_contacts c ON l.contact_id = c.id
+                       ORDER BY l.created_at DESC'''
+                )
+            rows = cursor.fetchall()
+            conn.close()
+            return rows
+        except Exception as e:
+            logger.error("Error getting CRM leads: %s", e)
+            return []
+
+    def update_crm_lead(self, lead_id: int, **kwargs) -> bool:
+        """Update a CRM lead by id."""
+        try:
+            allowed = {'contact_id', 'title', 'stage', 'value', 'probability', 'owner', 'notes'}
+            updates = []
+            values = []
+            for key, value in kwargs.items():
+                if key in allowed and value is not None:
+                    updates.append(f'{key} = ?')
+                    values.append(value)
+            if not updates:
+                return True
+            updates.append('updated_at = datetime(\'now\')')
+            values.append(lead_id)
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute(f'UPDATE crm_leads SET {", ".join(updates)} WHERE id = ?', values)
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error("Error updating CRM lead: %s", e)
+            return False
+
+    def delete_crm_lead(self, lead_id: int) -> bool:
+        """Delete a CRM lead by id."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM crm_leads WHERE id = ?', (lead_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error("Error deleting CRM lead: %s", e)
+            return False
+
+    def add_crm_activity(self, lead_id: int, activity_type: str, note: str, due_date: str) -> bool:
+        """Add a CRM activity to a lead."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO crm_activities (lead_id, type, note, due_date) VALUES (?, ?, ?, ?)',
+                (lead_id, activity_type, note, due_date)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error("Error adding CRM activity: %s", e)
+            return False
+
+    def get_crm_activities(self, lead_id: int) -> list:
+        """Get all activities for a lead."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT * FROM crm_activities WHERE lead_id = ? ORDER BY created_at DESC',
+                (lead_id,)
+            )
+            rows = cursor.fetchall()
+            conn.close()
+            return rows
+        except Exception as e:
+            logger.error("Error getting CRM activities: %s", e)
+            return []
+
+    def update_crm_activity(self, activity_id: int, done: int) -> bool:
+        """Mark a CRM activity as done or not done."""
+        try:
+            conn = sqlite3.connect(self.db_file)
+            cursor = conn.cursor()
+            cursor.execute('UPDATE crm_activities SET done = ? WHERE id = ?', (done, activity_id))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error("Error updating CRM activity: %s", e)
+            return False
+
     def close(self):
         """Close database connection."""
         pass

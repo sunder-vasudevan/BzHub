@@ -1,26 +1,48 @@
 # BizHub - Cloud-Ready ERP Suite Architecture
 
-## 2026 Web & Cloud Architecture Update
-
-**Frontend:** Next.js (TypeScript) app in `bzhub_web/` (deployed on Vercel)
-**Backend API:** FastAPI app in `api/` (deployed on Render)
-**Database:** Supabase (managed Postgres, auth, storage)
-
-All major design choices and future decisions will be documented in this file. Please update this document with every significant architectural or technology decision.
-
-**Version:** 1.0.0  
-**Status:** Refactored with cloud-ready, modular architecture
+**Version:** 2.0.0
+**Status:** 3-tier architecture — Desktop (Tkinter) + API (FastAPI) + Web (Next.js)
 
 ## Overview
 
-BizHub is a complete ERP solution for small businesses. The codebase has been refactored into a **cloud-ready, modular architecture** designed for:
+BizHub is a complete ERP solution for small businesses with a **3-tier architecture**:
 
-- ✅ **Desktop deployment** (Tkinter - works offline)
-- 🔮 **Web deployment** (Flask/FastAPI - future)
-- 🔮 **Cloud database** (PostgreSQL/MySQL - future)
-- ✅ **API-first** design for extensibility
+- ✅ **Desktop deployment** (Tkinter — works offline, connects directly to SQLite)
+- ✅ **REST API** (FastAPI — exposes all data via HTTP, same SQLite adapter)
+- ✅ **Web frontend** (Next.js + Tailwind — connects to API, browser-accessible)
+- 🔮 **Cloud database** (PostgreSQL/MySQL — future, swap adapter only)
 
-## Architecture
+## 3-Tier Architecture
+
+```
+┌─────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│   Desktop (Tkinter) │     │   API (FastAPI)       │     │   Web (Next.js)      │
+│   bizhub.py         │     │   bizhub.py --api     │     │   bzhub_web/bzhub_web│
+│                     │     │                      │     │                      │
+│  src/ui/desktop/    │     │  src/api/main.py     │◄────│  src/app/            │
+│  bizhub_desktop.py  │     │  src/api/routers/    │     │  src/lib/api.ts      │
+│                     │     │  auth, inventory,    │     │  page.tsx, dashboard,│
+│  tabs/              │     │  sales, contacts,    │     │  operations, crm     │
+│  - dashboard_tab    │     │  leads, dashboard    │     │                      │
+│  - crm_tab          │     │                      │     │  Tailwind CSS        │
+│  - crm_leads_tab    │     │  src/api/deps.py     │     │  Primary: #6D28D9   │
+│  - inventory_tab    │     │  (shared services)   │     │                      │
+│  - pos_tab, hr_tab  │     │                      │     │                      │
+└──────────┬──────────┘     └──────────┬───────────┘     └──────────────────────┘
+           │                           │
+           │         direct            │         via same
+           └──────────┬────────────────┘         adapter
+                      │
+           ┌──────────▼───────────────┐
+           │   src/db/sqlite_adapter  │
+           │   SQLiteAdapter          │
+           │   - inventory.db         │
+           │   - CRM tables           │
+           │   - HR, Payroll, etc.    │
+           └──────────────────────────┘
+```
+
+## File Structure
 
 ```
 bizhub/
@@ -41,30 +63,67 @@ bizhub/
 │   │   ├── visitor_service.py
 │   │   ├── email_service.py
 │   │   ├── misc_service.py     # Activity logging, company info
+│   │   ├── crm_service.py      # CRM — contacts, leads, pipeline, activities
+│   │   ├── payroll_service.py
+│   │   ├── appraisal_service.py
+│   │   └── __init__.py
+│   │
+│   ├── api/                     # FastAPI REST backend (--api mode)
+│   │   ├── main.py             # FastAPI app + CORS + router registration
+│   │   ├── deps.py             # Shared DB adapter + service instances
+│   │   ├── routers/
+│   │   │   ├── auth.py         # POST /auth/login
+│   │   │   ├── inventory.py    # GET/POST/PUT/DELETE /inventory
+│   │   │   ├── sales.py        # GET /sales, POST /sales/checkout
+│   │   │   ├── contacts.py     # GET/POST/PUT/DELETE /contacts
+│   │   │   ├── leads.py        # GET/POST/PUT/DELETE /leads, GET /leads/pipeline
+│   │   │   └── dashboard.py    # GET /dashboard/kpis, GET /dashboard/trend
 │   │   └── __init__.py
 │   │
 │   ├── ui/
 │   │   ├── desktop/
-│   │   │   ├── bizhub_desktop.py    # Tkinter desktop app
-│   │   │   └── __init__.py
-│   │   └── web/                     # (Legacy) Flask/Vue.js web UI (see bzhub_web/ for Next.js)
-├── bzhub_web/                  # Next.js (TypeScript) frontend (Vercel)
+│   │   │   ├── bizhub_desktop.py    # Tkinter desktop app shell
+│   │   │   └── tabs/
+│   │   │       ├── base_tab.py
+│   │   │       ├── dashboard_tab.py
+│   │   │       ├── crm_tab.py       # Operations container (CRM first)
+│   │   │       ├── crm_leads_tab.py # CRM Leads + Pipeline Kanban
+│   │   │       ├── inventory_tab.py
+│   │   │       ├── pos_tab.py
+│   │   │       ├── hr_tab.py
+│   │   │       ├── visitors_tab.py
+│   │   │       ├── bills_tab.py
+│   │   │       ├── reports_tab.py
+│   │   │       └── settings_tab.py
+│   │   └── __init__.py
 │   │
 │   ├── config.py               # Environment-based configuration
 │   └── __init__.py
 │
-├── api/                        # REST API layer (FastAPI, Render)
-│   ├── app.py                 # FastAPI server
-│   └── __init__.py
+├── bzhub_web/bzhub_web/        # Next.js Web Frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx      # Root layout
+│   │   │   ├── globals.css     # Tailwind base
+│   │   │   ├── page.tsx        # Login page
+│   │   │   ├── dashboard/page.tsx   # KPI dashboard
+│   │   │   ├── operations/page.tsx  # Operations hub
+│   │   │   └── crm/page.tsx         # CRM Kanban (standalone)
+│   │   ├── lib/
+│   │   │   └── api.ts          # apiFetch + typed API helpers
+│   │   └── components/
+│   │       └── TopNav.tsx      # Navigation bar
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── tailwind.config.ts
 │
 ├── tests/
-│   ├── test_bizhub_refactored.py    # Service & core logic tests
+│   ├── test_bizhub_refactored.py
 │   └── conftest.py
 │
-├── bizhub.py                   # Main launcher script
-├── requirements.txt            # Dependencies
-├── setup.py                    # Package metadata
-└── README.md
+├── bizhub.py                   # Main launcher (desktop / --api / --web)
+├── .env.example                # Environment variable template
+└── requirements.txt
 ```
 
 ## Key Design Principles
@@ -144,9 +203,31 @@ print(with_tax)  # 98.2
 python bizhub.py
 ```
 
-Credentials:
-- Username: `admin`
-- Password: `admin123`
+Credentials: `admin` / `admin123`
+
+### API Server (FastAPI)
+
+```bash
+# Install dependencies first
+pip install fastapi 'uvicorn[standard]'
+
+# Start API
+python bizhub.py --api
+# API docs: http://localhost:8000/docs
+# Health: http://localhost:8000/health
+```
+
+### Web Frontend (Next.js)
+
+```bash
+# Copy environment file
+cp bzhub_web/bzhub_web/.env.local.example bzhub_web/bzhub_web/.env.local
+
+# Start dev server (requires Node.js 18+)
+cd bzhub_web/bzhub_web
+npm run dev
+# Visit: http://localhost:3000
+```
 
 ### Testing
 
@@ -189,8 +270,8 @@ python bizhub.py --db mydb.db
 - Cloud storage for attachments
 
 ### Phase 3: Web Interface
-- REST API layer (`api/app.py` with FastAPI, deployed on Render)
-- Web UI (`bzhub_web/` with Next.js, deployed on Vercel)
+- REST API layer (`api/app.py` with FastAPI)
+- Web UI (`src/ui/web/` with Flask + Vue.js)
 - Mobile-responsive design
 - Real-time notifications
 
@@ -278,7 +359,7 @@ inventory = InventoryService(db)
 ## Notes for Future Development
 
 1. **Database Switching**: Only the `src/db/` layer needs to change
-2. **UI Swapping**: Web UI now lives in `bzhub_web/` (Next.js, Vercel)
+2. **UI Swapping**: Create new adapter in `src/ui/web/` for Flask/Vue
 3. **API Creation**: Expose services as REST endpoints in `api/app.py`
 4. **Offline-First Desktop**: Current design supports offline mode
 5. **Cloud Sync**: Services layer handles sync logic independently
@@ -292,5 +373,5 @@ inventory = InventoryService(db)
 
 ---
 
-**Last Updated:** February 18, 2026  
-**Architecture Version:** 1.1.0 (Web & Cloud Ready)
+**Last Updated:** 2026-03-09
+**Architecture Version:** 2.0.0 (3-Tier: Desktop + API + Web)

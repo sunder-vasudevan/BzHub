@@ -406,7 +406,66 @@ All 24 tests pass, all features work, and the architecture supports:
 
 ---
 
-**Architecture Version:** 1.0.0 (Cloud-Ready)  
-**Refactoring Complete:** February 4, 2026  
-**Tests Status:** 24/24 Passing ✅  
+**Architecture Version:** 1.0.0 (Cloud-Ready)
+**Refactoring Complete:** February 4, 2026
+**Tests Status:** 24/24 Passing ✅
 **Ready for:** Modern UI, Product Enhancements, Cloud Migration
+
+---
+
+## v2.0 Additions — 2026-03-09
+
+### CRM Module (Phase 1)
+
+**New database tables** in `src/db/sqlite_adapter.py`:
+- `crm_contacts` — Contact directory with name, company, email, phone, source, status, notes
+- `crm_leads` — Sales pipeline leads with stage, value, probability, owner
+- `crm_activities` — Activity log (call/email/meeting/note) per lead, with done tracking
+- 3 new performance indexes for stage, contact, and activity queries
+
+**11 new DB methods** on `SQLiteAdapter` for full CRM CRUD.
+
+**`CRMService`** (`src/services/crm_service.py`):
+- Contact and lead CRUD with validation
+- `get_pipeline_summary()` — leads grouped by stage
+- `get_conversion_rate()` — Won/(Won+Lost) as percentage
+- `get_pipeline_value()` — sum of non-Lost lead values
+- `advance_lead_stage()` — moves lead one stage forward
+
+**`CRMLeadsTab`** (`src/ui/desktop/tabs/crm_leads_tab.py`):
+- Contacts sub-tab: Treeview with searchable CRUD
+- Pipeline sub-tab: 6-column Kanban with scrollable lead cards
+- Lead Detail dialog: editable fields + activity log + Add Activity form
+
+### FastAPI Backend (Phase 2)
+
+**`src/api/`** — new package:
+- `main.py` — FastAPI app with CORS, router registration
+- `deps.py` — Shared `SQLiteAdapter` instance; all services as FastAPI dependencies
+- `routers/auth.py` — `POST /auth/login`
+- `routers/inventory.py` — Full CRUD
+- `routers/sales.py` — List + checkout
+- `routers/contacts.py` — Full CRUD
+- `routers/leads.py` — Full CRUD + `/pipeline` summary
+- `routers/dashboard.py` — KPIs + trend data
+
+**`bizhub.py --api`** now launches `uvicorn src.api.main:app` (requires `fastapi + uvicorn[standard]`).
+
+### Next.js Web Frontend (Phase 3)
+
+**`bzhub_web/bzhub_web/`** — scaffolded with package.json, tsconfig, Tailwind config.
+
+**Pages**:
+- `/` — Login (POST /auth/login → localStorage → redirect)
+- `/dashboard` — 6 KPI cards + 14-day sales trend bar chart
+- `/operations` — Tab hub: Contacts, CRM, Inventory, POS, Bills
+- `/crm` — Full-screen Kanban pipeline with lead detail modal
+
+**`src/lib/api.ts`** — `apiFetch()` + typed helpers for all API endpoints.
+
+**Design**: Purple primary (#6D28D9), surface (#F5F6FA), white cards with shadow-sm + rounded-xl.
+
+---
+
+**Architecture Version:** 2.0.0 (3-Tier: Desktop + API + Web)
+**v2.0 Complete:** 2026-03-09
