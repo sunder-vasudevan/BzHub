@@ -240,3 +240,24 @@ Of the 3 "critical bugs" from the review:
 - Run web frontend: `cd bzhub_web/bzhub_web && npm run dev`
 
 ---
+
+## UPDATE 6 — 2026-03-10: Merged v2.0 into main
+
+**Branch merged**: `feature/v2-crm-fastapi-web` → `main`
+**Commit**: `f93c769`
+**Pushed to**: `origin/main`
+
+All v2.0 work is now in the main branch:
+
+| Area | Status |
+|------|--------|
+| Monolith split (12 tab modules) | ✅ Merged |
+| 6 UI fixes (Visitors, POS, Bills, Excel, currency, CRM rename) | ✅ Merged |
+| Real CRM module (Kanban, leads, activities) | ✅ Merged |
+| FastAPI REST backend | ✅ Merged |
+| Next.js + Tailwind web frontend | ✅ Merged |
+| DB schema (crm_contacts, crm_leads, crm_activities) | ✅ Merged |
+
+**Merge conflicts resolved**: `assets/quick_actions.json`, `bzhub_web/bzhub_web/package.json`, `bzhub_web/bzhub_web/tsconfig.json`, `documentation/ARCHITECTURE.md`, `src/ui/desktop/bizhub_desktop.py` — all resolved by accepting the feature branch (v2.0) version.
+
+---
