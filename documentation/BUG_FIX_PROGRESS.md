@@ -272,3 +272,54 @@ All v2.0 work is now in the main branch:
 All 3 original critical bugs from the code review are resolved. No further action needed.
 
 ---
+
+## UPDATE 7 — 2026-03-10: shadcn/ui Web UI Rebuild
+
+### Summary
+Built out the web frontend with shadcn/ui component library on top of the existing Next.js 14 + Tailwind stack.
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `bzhub_web/bzhub_web/components.json` | shadcn/ui config (manual setup, no CLI) |
+| `bzhub_web/bzhub_web/src/lib/utils.ts` | `cn()` utility (clsx + tailwind-merge) |
+| `bzhub_web/bzhub_web/src/components/ui/button.tsx` | Button — variants: default, destructive, outline, secondary, ghost, link; sizes: default, sm, lg, icon |
+| `bzhub_web/bzhub_web/src/components/ui/card.tsx` | Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter |
+| `bzhub_web/bzhub_web/src/components/ui/input.tsx` | Input component |
+| `bzhub_web/bzhub_web/src/components/ui/label.tsx` | Label (Radix primitive) |
+| `bzhub_web/bzhub_web/src/components/ui/badge.tsx` | Badge — variants: default, secondary, destructive, outline |
+| `bzhub_web/bzhub_web/src/components/ui/table.tsx` | Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption |
+| `bzhub_web/bzhub_web/src/components/ui/dialog.tsx` | Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose |
+| `bzhub_web/bzhub_web/src/components/ui/select.tsx` | Select, SelectTrigger, SelectValue, SelectContent, SelectItem |
+| `bzhub_web/bzhub_web/src/components/ui/separator.tsx` | Separator component |
+| `bzhub_web/bzhub_web/src/components/ui/avatar.tsx` | Avatar, AvatarImage, AvatarFallback |
+| `bzhub_web/bzhub_web/src/components/ui/dropdown-menu.tsx` | DropdownMenu and all sub-components |
+| `bzhub_web/bzhub_web/src/components/layout/Sidebar.tsx` | Left sidebar with logo, nav items (lucide icons), active state, collapse toggle, user avatar + logout |
+| `bzhub_web/bzhub_web/src/components/layout/AppLayout.tsx` | Wrapper: Sidebar + main content; handles auth redirect |
+
+### Files Updated
+
+| File | Changes |
+|------|---------|
+| `bzhub_web/bzhub_web/src/app/globals.css` | Full shadcn/ui CSS variable block (light + dark), Tailwind directives, brand colors preserved |
+| `bzhub_web/bzhub_web/tailwind.config.ts` | Extended with shadcn/ui tokens (background, foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, ring) via CSS variables |
+| `bzhub_web/bzhub_web/src/app/page.tsx` | Login rewritten: centered Card, gradient dark background, Input/Label/Button components, error state |
+| `bzhub_web/bzhub_web/src/app/dashboard/page.tsx` | Dashboard rewritten: 6 KPI cards with icons, sales trend Table, recent activity sidebar, recharts comment placeholder, AppLayout wrapper |
+| `bzhub_web/bzhub_web/src/app/operations/page.tsx` | Operations rewritten: Inventory tab (searchable Table + shadcn Dialog for add/edit, Badge status), POS tab (card grid + Cart card), Bills tab (Table + date filter) |
+| `bzhub_web/bzhub_web/src/app/crm/page.tsx` | CRM rewritten: 6-column Kanban board, per-column Add Lead Dialog (with Select for contact), lead detail Dialog with controlled Select stage, 3-card stats bar |
+| `bzhub_web/bzhub_web/package.json` | Added 9 Radix UI packages + clsx, class-variance-authority, lucide-react, tailwind-merge |
+
+### Design Decisions
+- Brand primary `#6D28D9` used throughout; CSS variables mapped to shadcn HSL token format
+- `AppLayout` handles auth guard (redirects to `/` if no `bzhub_user` in localStorage) — pages no longer need individual auth checks
+- Sidebar collapses to icon-only mode (16px wide) with tooltip titles; mobile overlay closes on backdrop click
+- All dialogs use controlled state (no uncontrolled Select inside Dialog to avoid React warnings)
+- Recharts chart integration left as a TODO comment in dashboard — table-based trend view is functional placeholder
+
+### Install required
+```
+cd bzhub_web/bzhub_web && npm install
+```
+
+---

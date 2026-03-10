@@ -1,99 +1,113 @@
-'use client';
+"use client"
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { login } from '@/lib/api';
+import { useState, FormEvent } from "react"
+import { useRouter } from "next/navigation"
+import { login } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+    e.preventDefault()
+    setError("")
+    setLoading(true)
     try {
-      const data = await login(username, password);
-      localStorage.setItem('bzhub_user', data.user);
-      localStorage.setItem('bzhub_role', data.role);
-      localStorage.setItem('bzhub_token', data.token);
-      router.push('/dashboard');
+      const data = await login(username, password)
+      localStorage.setItem("bzhub_user", data.user)
+      localStorage.setItem("bzhub_role", data.role)
+      localStorage.setItem("bzhub_token", data.token)
+      router.push("/dashboard")
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Login failed';
-      setError(msg.includes('401') || msg.includes('Invalid') ? 'Invalid username or password.' : msg);
+      const msg = err instanceof Error ? err.message : "Login failed"
+      setError(
+        msg.includes("401") || msg.includes("Invalid")
+          ? "Invalid username or password."
+          : msg
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-surface flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-sm">
-        {/* Logo / Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary text-white text-2xl font-bold mb-3 shadow">
-            Bz
+    <main
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 40%, #1e1b4b 100%)",
+      }}
+    >
+      <Card className="w-full max-w-sm shadow-2xl border-0">
+        <CardHeader className="text-center space-y-3 pb-4">
+          <div className="flex justify-center">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+              style={{ backgroundColor: "#6D28D9" }}
+            >
+              Bz
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">BizHub</h1>
-          <p className="text-sm text-gray-500 mt-1">Complete ERP Suite</p>
-        </div>
-
-        {error && (
-          <div className="mb-4 px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="username">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="admin"
-              autoComplete="username"
-            />
+            <CardTitle className="text-2xl font-bold">BizHub</CardTitle>
+            <CardDescription className="mt-1">Complete ERP Suite</CardDescription>
           </div>
+        </CardHeader>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
-          </div>
+        <CardContent>
+          {error && (
+            <div className="mb-4 px-4 py-2.5 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm">
+              {error}
+            </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2 rounded-lg transition-colors disabled:opacity-60"
-            style={{ backgroundColor: '#6D28D9' }}
-          >
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                placeholder="admin"
+                autoComplete="username"
+              />
+            </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          BizHub ERP v2.0 &mdash; Requires API server running
-        </p>
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Signing in…" : "Sign In"}
+            </Button>
+          </form>
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            BizHub ERP v2.0 &mdash; Requires API server running
+          </p>
+        </CardContent>
+      </Card>
     </main>
-  );
+  )
 }
