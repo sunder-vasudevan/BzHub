@@ -323,3 +323,57 @@ cd bzhub_web/bzhub_web && npm install
 ```
 
 ---
+
+## UPDATE 8 — 2026-03-10: v3.1.0 Released
+
+**Tag**: `v3.1.0` | **Branch**: `main` | **GitHub Release**: https://github.com/sunder-vasudevan/BzHub/releases/tag/v3.1.0
+
+### Shipped in this release
+
+| Feature | File(s) | Status |
+|---------|---------|--------|
+| HR page — employees CRUD + payroll tab | `src/app/hr/page.tsx` | ✅ Done |
+| Settings page — company profile, user info, API status | `src/app/settings/page.tsx` | ✅ Done |
+| Currency selector — default Indian Rupee ₹ | `src/app/settings/page.tsx` | ✅ Done |
+| HR API routers — /hr/employees, /hr/payroll | `src/api/routers/hr.py` | ✅ Done |
+| Settings API router — /settings/company | `src/api/routers/settings.py` | ✅ Done |
+| BzHub naming fixed throughout web UI | all src/app + components | ✅ Done |
+| Tailwind v3 pinned (3.4.17), PostCSS conflict resolved | `package.json`, `postcss.config.js` | ✅ Done |
+| price.toFixed() crash on undefined fixed | `operations/page.tsx` | ✅ Done |
+| start.sh — one-command startup script | `start.sh` | ✅ Done |
+
+### All pages now working
+Dashboard · Operations · CRM · HR · Settings
+
+---
+
+## ROADMAP — Next Features
+
+### Tier 1 — High Value, Near-term
+| Feature | Notes |
+|---------|-------|
+| Supabase auth integration | Replace FastAPI mock login with Supabase — needs URL + anon key from user |
+| Deploy to Vercel + Render | Web → Vercel (free), API → Render (free), needs env vars |
+| Recharts sales trend chart | Dashboard currently shows table — replace with line chart |
+| Currency symbol used across all pages | Currently saved in localStorage but not yet applied to price displays |
+| Toast notifications for CRUD | Show success/error toasts after add/edit/delete actions |
+
+### Tier 2 — Medium-term
+| Feature | Notes |
+|---------|-------|
+| CRM lead drag-and-drop | Move cards between Kanban columns |
+| Reports page | Charts + data export for sales, inventory, HR |
+| Dark mode toggle in web UI | CSS variables are ready, just need toggle button wired up |
+| User management | Add/edit users from Settings (currently hardcoded admin only) |
+| Notifications/alerts | Low stock alerts, follow-up reminders |
+
+### Tier 3 — Future
+| Feature | Notes |
+|---------|-------|
+| Mobile app (React Native) | Reuse API + shared components |
+| Supabase DB migration | Move SQLite → Supabase Postgres for cloud persistence |
+| Desktop UI modernisation | customtkinter (Option A — deferred) |
+| Multi-language / i18n | English + regional languages |
+| Audit log | Track who changed what and when |
+
+---
