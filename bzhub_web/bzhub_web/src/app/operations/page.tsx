@@ -295,7 +295,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
     setCart((prev) => prev.filter((c) => c.item.id !== id))
   }
 
-  const total = cart.reduce((s, c) => s + c.item.sale_price * c.qty, 0)
+  const total = cart.reduce((s, c) => s + Number(c.item.sale_price || 0) * c.qty, 0)
 
   return (
     <div className="flex gap-6">
@@ -341,7 +341,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
                     {c.item.item_name} x{c.qty}
                   </span>
                   <span className="font-medium ml-2" style={{ color: "#6D28D9" }}>
-                    {currency}{(c.item.sale_price * c.qty).toFixed(2)}
+                    {currency}{(Number(c.item.sale_price || 0) * c.qty).toFixed(2)}
                   </span>
                   <button
                     onClick={() => removeFromCart(c.item.id)}
