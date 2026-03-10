@@ -81,22 +81,45 @@ function KPICard({ title, value, subtitle, trend, trendUp, icon, iconBg }: KPICa
   )
 }
 
+const PERIODS = [
+  { label: "1 Week",   days: 7 },
+  { label: "15 Days",  days: 15 },
+  { label: "1 Month",  days: 30 },
+  { label: "1 Quarter",days: 90 },
+]
+
 export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [trend, setTrend] = useState<TrendRow[]>([])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
+  const [trendDays, setTrendDays] = useState(14)
+  const [customDays, setCustomDays] = useState("")
+  const [trendLoading, setTrendLoading] = useState(false)
   const currency = useCurrency()
 
   useEffect(() => {
-    Promise.all([fetchKPIs(), fetchTrend(14)])
-      .then(([k, t]) => {
-        setKpis(k)
-        setTrend(t)
-      })
+    Promise.all([fetchKPIs(), fetchTrend(trendDays)])
+      .then(([k, t]) => { setKpis(k); setTrend(t) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
+
+  function handlePeriodChange(days: number) {
+    setTrendDays(days)
+    setCustomDays("")
+    setTrendLoading(true)
+    fetchTrend(days)
+      .then(setTrend)
+      .catch(() => {})
+      .finally(() => setTrendLoading(false))
+  }
+
+  function handleCustomDays() {
+    const d = parseInt(customDays)
+    if (!d || d < 1 || d > 365) return
+    handlePeriodChange(d)
+  }
 
   const recentActivity = trend.slice(0, 5).map((row) => ({
     date: row.date,
@@ -183,13 +206,51 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Sales Trend */}
               <Card className="xl:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Sales Trend — Last 14 Days
-                  </CardTitle>
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <CardTitle className="text-base">
+                      Sales Trend — Last {trendDays} Days
+                    </CardTitle>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {PERIODS.map((p) => (
+                        <button
+                          key={p.days}
+                          onClick={() => handlePeriodChange(p.days)}
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+                            trendDays === p.days && !customDays
+                              ? "text-white border-transparent"
+                              : "text-muted-foreground border-border hover:bg-muted"
+                          }`}
+                          style={trendDays === p.days && !customDays ? { backgroundColor: "#6D28D9", borderColor: "#6D28D9" } : {}}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={1}
+                          max={365}
+                          placeholder="Days"
+                          value={customDays}
+                          onChange={(e) => setCustomDays(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleCustomDays()}
+                          className="w-16 h-7 px-2 text-xs rounded-md border border-border bg-background focus:outline-none focus:ring-1"
+                          style={{ "--tw-ring-color": "#6D28D9" } as React.CSSProperties}
+                        />
+                        <button
+                          onClick={handleCustomDays}
+                          className="px-2 py-1 rounded-md text-xs font-medium text-white transition-colors"
+                          style={{ backgroundColor: "#6D28D9" }}
+                        >
+                          Go
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
+                  {trendLoading ? (
                     <div className="animate-pulse h-[280px] bg-muted rounded-lg" />
                   ) : trend.length === 0 ? (
                     <p className="text-muted-foreground text-sm italic">
