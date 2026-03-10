@@ -14,7 +14,17 @@ import {
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { fetchCompanySettings, saveCompanySettings, fetchHealth } from "@/lib/api"
-import { Building2, User, Info, CheckCircle2, XCircle } from "lucide-react"
+import { Building2, User, Info, CheckCircle2, XCircle, Coins } from "lucide-react"
+
+const CURRENCIES = [
+  { symbol: "₹", label: "Indian Rupee (₹)" },
+  { symbol: "$", label: "US Dollar ($)" },
+  { symbol: "€", label: "Euro (€)" },
+  { symbol: "£", label: "British Pound (£)" },
+  { symbol: "¥", label: "Japanese Yen (¥)" },
+  { symbol: "AED", label: "UAE Dirham (AED)" },
+  { symbol: "SGD", label: "Singapore Dollar (SGD)" },
+]
 
 interface CompanyData {
   company_name?: string
@@ -35,6 +45,21 @@ export default function SettingsPage() {
   // Current user state
   const [currentUser, setCurrentUser] = useState("")
   const [currentRole, setCurrentRole] = useState("")
+
+  // Currency state — persisted in localStorage
+  const [currency, setCurrency] = useState("₹")
+  const [currencySaved, setCurrencySaved] = useState(false)
+
+  useEffect(() => {
+    const stored = localStorage.getItem("bzhub_currency")
+    if (stored) setCurrency(stored)
+  }, [])
+
+  function handleSaveCurrency() {
+    localStorage.setItem("bzhub_currency", currency)
+    setCurrencySaved(true)
+    setTimeout(() => setCurrencySaved(false), 3000)
+  }
 
   // API health state
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking")
@@ -192,6 +217,49 @@ export default function SettingsPage() {
                   </div>
                 </form>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Currency Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Coins className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                Currency
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="currency">Currency Symbol</Label>
+                  <select
+                    id="currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.symbol} value={c.symbol}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-3 pt-1">
+                  <Button
+                    type="button"
+                    onClick={handleSaveCurrency}
+                    style={{ backgroundColor: "#6D28D9" }}
+                    className="text-white hover:opacity-90"
+                  >
+                    Save Currency
+                  </Button>
+                  {currencySaved && (
+                    <span className="text-sm text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Saved
+                    </span>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
