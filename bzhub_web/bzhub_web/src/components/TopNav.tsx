@@ -48,7 +48,7 @@ export default function TopNav({ active }: TopNavProps) {
           <span className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: '#6D28D9' }}>
             Bz
           </span>
-          BizHub
+          BzHub
         </Link>
         <div className="flex gap-1">
           {navItems.map(item => (

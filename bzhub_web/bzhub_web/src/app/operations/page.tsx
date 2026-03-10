@@ -222,7 +222,7 @@ function InventoryTab() {
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.item_name}</TableCell>
                   <TableCell className="text-right">{item.quantity}</TableCell>
-                  <TableCell className="text-right">${item.sale_price.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">${Number(item.sale_price || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{item.description || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={status.variant}>{status.label}</Badge>
@@ -297,7 +297,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
               >
                 <p className="text-sm font-semibold leading-tight">{item.item_name}</p>
                 <p className="text-sm font-bold mt-1" style={{ color: "#6D28D9" }}>
-                  ${item.sale_price.toFixed(2)}
+                  ${Number(item.sale_price || 0).toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground">Stock: {item.quantity}</p>
               </button>

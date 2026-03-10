@@ -1,5 +1,5 @@
 /**
- * BizHub API client — connects to the FastAPI backend.
+ * BzHub API client — connects to the FastAPI backend.
  *
  * Set NEXT_PUBLIC_API_URL in .env.local to override the default.
  * Default: http://localhost:8000
@@ -121,4 +121,51 @@ export async function deleteLead(id: number) {
 
 export async function fetchSales() {
   return apiFetch('/sales');
+}
+
+// ---- HR / Employees ----
+
+export async function fetchEmployees() {
+  return apiFetch('/hr/employees');
+}
+
+export async function createEmployee(data: Record<string, unknown>) {
+  return apiFetch('/hr/employees', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateEmployee(id: number, data: Record<string, unknown>) {
+  return apiFetch(`/hr/employees/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteEmployee(id: number) {
+  return apiFetch(`/hr/employees/${id}`, { method: 'DELETE' });
+}
+
+// ---- Payroll ----
+
+export async function fetchPayrolls() {
+  return apiFetch('/hr/payroll');
+}
+
+// ---- Settings / Company ----
+
+export async function fetchCompanySettings() {
+  return apiFetch('/settings/company');
+}
+
+export async function saveCompanySettings(data: Record<string, unknown>) {
+  return apiFetch('/settings/company', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchHealth() {
+  return apiFetch('/health');
 }

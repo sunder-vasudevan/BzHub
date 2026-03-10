@@ -55,7 +55,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">BizHub</CardTitle>
+            <CardTitle className="text-2xl font-bold">BzHub</CardTitle>
             <CardDescription className="mt-1">Complete ERP Suite</CardDescription>
           </div>
         </CardHeader>
@@ -104,7 +104,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            BizHub ERP v2.0 &mdash; Requires API server running
+            BzHub ERP v2.0 &mdash; Requires API server running
           </p>
         </CardContent>
       </Card>

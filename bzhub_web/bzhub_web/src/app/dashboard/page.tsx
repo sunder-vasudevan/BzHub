@@ -116,7 +116,7 @@ export default function DashboardPage() {
 
         {error && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm">
-            Could not load data: {error}. Make sure the BizHub API is running.
+            Could not load data: {error}. Make sure the BzHub API is running.
           </div>
         )}
 

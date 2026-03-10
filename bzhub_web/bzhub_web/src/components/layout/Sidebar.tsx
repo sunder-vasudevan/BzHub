@@ -73,7 +73,7 @@ export default function Sidebar({ activePage, user, onLogout }: SidebarProps) {
               >
                 Bz
               </span>
-              BizHub
+              BzHub
             </Link>
           )}
           {collapsed && (
