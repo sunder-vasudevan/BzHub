@@ -3,14 +3,6 @@
 import { useEffect, useState } from "react"
 import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { fetchKPIs, fetchTrend } from "@/lib/api"
 import {
@@ -21,6 +13,16 @@ import {
   TrendingUp,
   BarChart3,
 } from "lucide-react"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts"
+import { useCurrency } from "@/hooks/useCurrency"
 
 interface KPIs {
   today_sales: number
@@ -79,15 +81,12 @@ function KPICard({ title, value, subtitle, trend, trendUp, icon, iconBg }: KPICa
   )
 }
 
-// NOTE: Future chart integration point — replace the trend table below with a
-// Recharts <LineChart> or <BarChart> component once recharts is installed.
-// Example: import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
-
 export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [trend, setTrend] = useState<TrendRow[]>([])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
+  const currency = useCurrency()
 
   useEffect(() => {
     Promise.all([fetchKPIs(), fetchTrend(14)])
@@ -136,14 +135,14 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
               <KPICard
                 title="Today's Sales"
-                value={`$${kpis.today_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                value={`${currency}${kpis.today_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
                 icon={<DollarSign className="h-4 w-4" />}
                 iconBg="#6D28D9"
                 trend="Revenue today"
               />
               <KPICard
                 title="Inventory Value"
-                value={`$${kpis.inventory_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                value={`${currency}${kpis.inventory_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
                 subtitle={`${kpis.total_items} items`}
                 icon={<Package className="h-4 w-4" />}
                 iconBg="#0EA5E9"
@@ -159,14 +158,14 @@ export default function DashboardPage() {
               />
               <KPICard
                 title="Pipeline Value"
-                value={`$${kpis.pipeline_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                value={`${currency}${kpis.pipeline_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
                 subtitle={`${kpis.conversion_rate}% conversion`}
                 icon={<Users className="h-4 w-4" />}
                 iconBg="#8B5CF6"
               />
               <KPICard
                 title="Avg Daily Sales"
-                value={`$${kpis.avg_daily_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                value={`${currency}${kpis.avg_daily_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
                 subtitle="14-day average"
                 icon={<BarChart3 className="h-4 w-4" />}
                 iconBg="#F59E0B"
@@ -188,50 +187,30 @@ export default function DashboardPage() {
                   <CardTitle className="text-base">
                     Sales Trend — Last 14 Days
                   </CardTitle>
-                  {/* TODO: Replace table with <BarChart> from recharts once installed */}
                 </CardHeader>
                 <CardContent>
-                  {trend.length === 0 ? (
+                  {loading ? (
+                    <div className="animate-pulse h-[280px] bg-muted rounded-lg" />
+                  ) : trend.length === 0 ? (
                     <p className="text-muted-foreground text-sm italic">
                       No sales data available.
                     </p>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Total Sales</TableHead>
-                          <TableHead>Bar</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {trend.map((row) => {
-                          const maxTotal = Math.max(...trend.map((r) => r.total), 1)
-                          const pct = Math.round((row.total / maxTotal) * 100)
-                          return (
-                            <TableRow key={row.date}>
-                              <TableCell className="text-muted-foreground">
-                                {row.date}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                ${row.total.toFixed(2)}
-                              </TableCell>
-                              <TableCell>
-                                <div className="h-2 rounded-full bg-muted w-32">
-                                  <div
-                                    className="h-2 rounded-full"
-                                    style={{
-                                      width: `${pct}%`,
-                                      backgroundColor: "#6D28D9",
-                                    }}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={trend}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Line
+                          type="monotone"
+                          dataKey="total"
+                          stroke="#6D28D9"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   )}
                 </CardContent>
               </Card>
@@ -263,7 +242,7 @@ export default function DashboardPage() {
                             </span>
                           </div>
                           <Badge variant={row.total > 0 ? "default" : "secondary"}>
-                            ${row.total.toFixed(2)}
+                            {currency}{row.total.toFixed(2)}
                           </Badge>
                         </div>
                       ))}

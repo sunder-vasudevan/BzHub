@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import AppLayout from "@/components/layout/AppLayout"
+import { toast } from "@/components/ui/toast"
+import { useCurrency } from "@/hooks/useCurrency"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -71,6 +73,7 @@ export default function CRMPage() {
   // controlled select state for add/edit forms
   const [addContactId, setAddContactId] = useState<string>("none")
   const [editStage, setEditStage] = useState<string>("")
+  const currency = useCurrency()
 
   const loadData = useCallback(async () => {
     try {
@@ -125,6 +128,7 @@ export default function CRMPage() {
     setShowAddModal(null)
     setAddContactId("none")
     await loadData()
+    toast("Lead added", "success")
   }
 
   async function handleSaveLead(e: React.FormEvent<HTMLFormElement>) {
@@ -178,7 +182,7 @@ export default function CRMPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Pipeline Value</p>
                 <p className="text-lg font-bold">
-                  ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                  {currency}{totalValue.toLocaleString("en-US", { minimumFractionDigits: 0 })}
                 </p>
               </div>
             </CardContent>
@@ -272,7 +276,7 @@ export default function CRMPage() {
                           </p>
                         )}
                         <Badge variant={stageBadgeVariant(stage)} className="text-xs mb-1">
-                          ${(lead.value || 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                          {currency}{(lead.value || 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}
                         </Badge>
                         {lead.owner && (
                           <p className="text-xs text-muted-foreground">

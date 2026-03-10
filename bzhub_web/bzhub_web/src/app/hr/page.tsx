@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import AppLayout from "@/components/layout/AppLayout"
+import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -92,8 +93,9 @@ function EmployeesTab() {
     try {
       await deleteEmployee(id)
       await load()
+      toast("Employee deleted", "success")
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Delete failed")
+      toast(e instanceof Error ? e.message : "Delete failed", "error")
     }
   }
 
@@ -111,13 +113,15 @@ function EmployeesTab() {
       if (employeeId) {
         await updateEmployee(employeeId, data)
         setEditing(null)
+        toast("Employee updated", "success")
       } else {
         await createEmployee(data)
         setShowAdd(false)
+        toast("Employee added", "success")
       }
       await load()
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Save failed")
+      toast(e instanceof Error ? e.message : "Save failed", "error")
     }
   }
 

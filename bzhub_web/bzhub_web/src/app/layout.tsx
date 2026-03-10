@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "BzHub ERP",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-surface min-h-screen">{children}</body>
+      <body className="bg-surface min-h-screen">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import AppLayout from "@/components/layout/AppLayout"
+import { toast } from "@/components/ui/toast"
+import { useCurrency } from "@/hooks/useCurrency"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -67,6 +69,7 @@ function InventoryTab() {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState<InventoryItem | null>(null)
+  const currency = useCurrency()
 
   const load = useCallback(async () => {
     const d = await fetchInventory().catch(() => [])
@@ -94,8 +97,13 @@ function InventoryTab() {
 
   async function handleDelete(name: string) {
     if (!confirm(`Delete "${name}"?`)) return
-    await deleteInventoryItem(name)
-    await load()
+    try {
+      await deleteInventoryItem(name)
+      await load()
+      toast("Item deleted", "success")
+    } catch {
+      toast("Failed to save item", "error")
+    }
   }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>, existingName?: string) {
@@ -109,14 +117,20 @@ function InventoryTab() {
       sale_price: Number(fd.get("sale_price")),
       description: fd.get("description") as string,
     }
-    if (existingName) {
-      await updateInventoryItem(existingName, data)
-      setEditing(null)
-    } else {
-      await createInventoryItem(data)
-      setShowAdd(false)
+    try {
+      if (existingName) {
+        await updateInventoryItem(existingName, data)
+        setEditing(null)
+        toast("Item updated", "success")
+      } else {
+        await createInventoryItem(data)
+        setShowAdd(false)
+        toast("Item added", "success")
+      }
+      await load()
+    } catch {
+      toast("Failed to save item", "error")
     }
-    await load()
   }
 
   function stockStatus(item: InventoryItem): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
@@ -222,7 +236,7 @@ function InventoryTab() {
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.item_name}</TableCell>
                   <TableCell className="text-right">{item.quantity}</TableCell>
-                  <TableCell className="text-right">${Number(item.sale_price || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{currency}{Number(item.sale_price || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{item.description || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={status.variant}>{status.label}</Badge>
@@ -267,6 +281,7 @@ function InventoryTab() {
 // ---- POS Tab ----
 function POSTab({ inventory }: { inventory: InventoryItem[] }) {
   const [cart, setCart] = useState<Array<{ item: InventoryItem; qty: number }>>([])
+  const currency = useCurrency()
 
   function addToCart(item: InventoryItem) {
     setCart((prev) => {
@@ -297,7 +312,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
               >
                 <p className="text-sm font-semibold leading-tight">{item.item_name}</p>
                 <p className="text-sm font-bold mt-1" style={{ color: "#6D28D9" }}>
-                  ${Number(item.sale_price || 0).toFixed(2)}
+                  {currency}{Number(item.sale_price || 0).toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground">Stock: {item.quantity}</p>
               </button>
@@ -326,7 +341,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
                     {c.item.item_name} x{c.qty}
                   </span>
                   <span className="font-medium ml-2" style={{ color: "#6D28D9" }}>
-                    ${(c.item.sale_price * c.qty).toFixed(2)}
+                    {currency}{(c.item.sale_price * c.qty).toFixed(2)}
                   </span>
                   <button
                     onClick={() => removeFromCart(c.item.id)}
@@ -340,14 +355,14 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
             <div className="mt-3 border-t border-border pt-3">
               <div className="flex justify-between font-semibold text-sm mb-3">
                 <span>Total</span>
-                <span style={{ color: "#6D28D9" }}>${total.toFixed(2)}</span>
+                <span style={{ color: "#6D28D9" }}>{currency}{total.toFixed(2)}</span>
               </div>
               <Button
                 disabled={cart.length === 0}
                 className="w-full"
                 onClick={() =>
                   alert(
-                    `Checkout: $${total.toFixed(2)} — Use the desktop app or API for full checkout.`
+                    `Checkout: ${currency}${total.toFixed(2)} — Use the desktop app or API for full checkout.`
                   )
                 }
               >
@@ -366,6 +381,7 @@ function BillsTab() {
   const [sales, setSales] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState("")
+  const currency = useCurrency()
 
   useEffect(() => {
     fetchSales()
@@ -419,9 +435,9 @@ function BillsTab() {
                   </TableCell>
                   <TableCell className="font-medium">{s.item_name}</TableCell>
                   <TableCell className="text-right">{s.quantity}</TableCell>
-                  <TableCell className="text-right">${(s.sale_price || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{currency}{(s.sale_price || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-right font-medium">
-                    ${(s.total_amount || 0).toFixed(2)}
+                    {currency}{(s.total_amount || 0).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{s.username}</TableCell>
                 </TableRow>
@@ -437,7 +453,7 @@ function BillsTab() {
           </Table>
           {filtered.length > 0 && (
             <div className="text-right text-sm font-semibold">
-              Total: ${total.toFixed(2)}{" "}
+              Total: {currency}{total.toFixed(2)}{" "}
               <span className="text-muted-foreground font-normal">
                 ({filtered.length} transactions)
               </span>
