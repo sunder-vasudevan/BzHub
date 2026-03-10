@@ -212,4 +212,56 @@ Critical bugs → Logging → DB indexes → Split monolith → Build CRM
 
 ---
 
-*Last updated: 2026-03-09*
+*Last updated: 2026-03-10*
+
+---
+
+## UI Modernisation — Decision Log
+
+**Date:** 2026-03-10
+
+### Current State (assessed)
+
+| Layer | Framework | Limitation |
+|-------|-----------|------------|
+| Desktop | Pure `ttk` / Tkinter | Hard cap — no rounded corners, no shadows, no smooth animations. Looks like a 2010 app regardless of polish |
+| Web | Next.js 14 + Tailwind | Skeleton pages only, no real components built yet |
+
+### Options Evaluated
+
+**Option A — Upgrade Desktop**
+- Replace `ttk` with `customtkinter` (modern Tkinter wrapper)
+- Gives: rounded corners, card shadows, smooth dark mode, system fonts
+- Effort: 2–3 days
+- Ceiling: Still Tkinter — limited by the framework
+
+**Option B — Build out Web UI** ✅ CHOSEN
+- Add `shadcn/ui` (Radix + Tailwind) to existing Next.js frontend
+- Gives: production-grade components (tables, modals, toasts, dropdowns), accessible, consistent design system matching existing purple/cyan brand
+- Effort: 3–5 days for full parity with desktop
+- Used by: Vercel, Linear, Notion — industry standard stack
+- No ceiling on design quality
+
+### Decision
+> **Option B selected (2026-03-10)** — Build out the web UI with shadcn/ui. Desktop will remain as-is for now. Web is the primary long-term delivery target.
+
+### Web UI Build Plan
+1. Install and configure `shadcn/ui` in `bzhub_web/bzhub_web/`
+2. Build shared layout: sidebar nav, top bar, breadcrumbs
+3. Dashboard page — KPI cards, sales trend chart (recharts)
+4. Operations/Inventory — data table with search, sort, CRUD modals
+5. CRM / Pipeline — Kanban board with drag-and-drop
+6. HR page — employee table + payroll summary
+7. Settings — company profile form, dark mode toggle
+8. Auth — login page with proper form validation
+
+### Tech Stack (Web)
+| Tool | Purpose |
+|------|---------|
+| Next.js 14 (App Router) | Framework |
+| Tailwind CSS 4 | Utility styling |
+| shadcn/ui | Component library |
+| Radix UI | Accessible primitives (via shadcn) |
+| Recharts | Charts (sales trend, KPIs) |
+| React Hook Form + Zod | Form validation |
+| Lucide React | Icons |
