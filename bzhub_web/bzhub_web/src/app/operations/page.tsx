@@ -91,7 +91,7 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
       q
         ? base.filter(
             (i) =>
-              i.item_name.toLowerCase().includes(q) ||
+              (i.item_name || "").toLowerCase().includes(q) ||
               (i.description || "").toLowerCase().includes(q)
           )
         : base
@@ -170,11 +170,11 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
             <Input name="threshold" type="number" defaultValue={item?.threshold ?? 0} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="cost_price">Cost Price ($)</Label>
+            <Label htmlFor="cost_price">Cost Price (₹)</Label>
             <Input name="cost_price" type="number" step="0.01" defaultValue={item?.cost_price ?? 0} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sale_price">Sale Price ($)</Label>
+            <Label htmlFor="sale_price">Sale Price (₹)</Label>
             <Input name="sale_price" type="number" step="0.01" defaultValue={item?.sale_price ?? 0} />
           </div>
         </div>
@@ -408,23 +408,41 @@ function BillsTab() {
   const [sales, setSales] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState("")
+  const [printSale, setPrintSale] = useState<Sale | null>(null)
   const currency = useCurrency()
 
   useEffect(() => {
     fetchSales()
-      .then((d) => {
-        setSales(d)
-        setLoading(false)
-      })
+      .then((d) => { setSales(d); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
   const filtered = dateFilter ? sales.filter((s) => s.sale_date?.startsWith(dateFilter)) : sales
   const total = filtered.reduce((s, r) => s + (r.total_amount || 0), 0)
 
+  function handlePrint(sale: Sale) {
+    setPrintSale(sale)
+    setTimeout(() => window.print(), 100)
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      {/* Print receipt — hidden on screen, shown on print */}
+      {printSale && (
+        <div id="receipt" className="hidden print:block p-8 font-mono text-sm">
+          <h2 className="text-xl font-bold mb-1">BzHub — Receipt</h2>
+          <p className="text-xs mb-4">{printSale.sale_date?.slice(0, 16)}</p>
+          <hr className="mb-3" />
+          <div className="flex justify-between"><span>Item</span><span>{printSale.item_name}</span></div>
+          <div className="flex justify-between"><span>Qty</span><span>{printSale.quantity}</span></div>
+          <div className="flex justify-between"><span>Unit Price</span><span>{currency}{(printSale.sale_price || 0).toFixed(2)}</span></div>
+          <hr className="my-3" />
+          <div className="flex justify-between font-bold"><span>Total</span><span>{currency}{(printSale.total_amount || 0).toFixed(2)}</span></div>
+          <p className="mt-4 text-xs text-center">Thank you for your purchase!</p>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 print:hidden">
         <Label className="text-sm text-muted-foreground whitespace-nowrap">Filter by date:</Label>
         <Input
           type="date"
@@ -442,7 +460,7 @@ function BillsTab() {
       {loading ? (
         <p className="text-muted-foreground text-sm py-4">Loading…</p>
       ) : (
-        <>
+        <div className="print:hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -452,6 +470,7 @@ function BillsTab() {
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>User</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -467,11 +486,21 @@ function BillsTab() {
                     {currency}{(s.total_amount || 0).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{s.username}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => handlePrint(s)}
+                    >
+                      Print
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground italic py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground italic py-8">
                     No sales found.
                   </TableCell>
                 </TableRow>
@@ -479,14 +508,14 @@ function BillsTab() {
             </TableBody>
           </Table>
           {filtered.length > 0 && (
-            <div className="text-right text-sm font-semibold">
+            <div className="text-right text-sm font-semibold mt-2">
               Total: {currency}{total.toFixed(2)}{" "}
               <span className="text-muted-foreground font-normal">
                 ({filtered.length} transactions)
               </span>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   )

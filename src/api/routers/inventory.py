@@ -39,17 +39,20 @@ class InventoryItemResponse(BaseModel):
 
 
 def _row_to_dict(row) -> dict:
-    """Convert a DB row tuple to a dict."""
+    """Convert a DB row tuple to a dict.
+
+    get_all_inventory() returns: (item_name, quantity, threshold, cost_price, sale_price, description)
+    """
     return {
-        "id": row[0],
-        "item_name": row[1],
-        "quantity": row[2],
-        "threshold": row[3],
-        "cost_price": row[4],
-        "sale_price": row[5],
-        "description": row[6] if len(row) > 6 else None,
-        "image_path": row[7] if len(row) > 7 else None,
-        "updated_at": row[8] if len(row) > 8 else None,
+        "id": row[0],           # item_name acts as unique id
+        "item_name": row[0],
+        "quantity": row[1],
+        "threshold": row[2],
+        "cost_price": float(row[3] or 0),
+        "sale_price": float(row[4] or 0),
+        "description": row[5] if len(row) > 5 else None,
+        "image_path": row[6] if len(row) > 6 else None,
+        "updated_at": row[7] if len(row) > 7 else None,
     }
 
 

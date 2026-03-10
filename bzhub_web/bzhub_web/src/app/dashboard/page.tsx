@@ -101,6 +101,13 @@ const PERIODS = [
   { label: "1 Quarter",days: 90 },
 ]
 
+function compactINR(n: number): string {
+  if (n >= 1e7) return `${(n / 1e7).toFixed(2)} Cr`
+  if (n >= 1e5) return `${(n / 1e5).toFixed(2)} L`
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)} K`
+  return n.toFixed(2)
+}
+
 export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [trend, setTrend] = useState<TrendRow[]>([])
@@ -197,7 +204,7 @@ export default function DashboardPage() {
               />
               <KPICard
                 title="Inventory Value"
-                value={`${currency}${kpis.inventory_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                value={`${currency}${compactINR(kpis.inventory_value)}`}
                 subtitle={`${kpis.total_items} items`}
                 icon={<Package className="h-4 w-4" />}
                 iconBg="#0EA5E9"
