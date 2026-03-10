@@ -260,4 +260,15 @@ All v2.0 work is now in the main branch:
 
 **Merge conflicts resolved**: `assets/quick_actions.json`, `bzhub_web/bzhub_web/package.json`, `bzhub_web/bzhub_web/tsconfig.json`, `documentation/ARCHITECTURE.md`, `src/ui/desktop/bizhub_desktop.py` — all resolved by accepting the feature branch (v2.0) version.
 
+**Critical bugs verified post-merge** (2026-03-10):
+
+| Bug | File | Status |
+|-----|------|--------|
+| Inventory decrement on POS sale | `src/ui/desktop/tabs/pos_tab.py:290-293` | ✅ Already fixed in v2.0 |
+| SQL injection in `update_inventory_item` | `src/db/sqlite_adapter.py:491-515` | ✅ Column names hardcoded, values parameterized |
+| SQL injection in `update_employee` | `src/db/sqlite_adapter.py:715-721` | ✅ `allowed_fields` allowlist in place |
+| Hardcoded admin credentials | `src/config.py:29-30` | ✅ Uses `os.getenv()` with env fallback |
+
+All 3 original critical bugs from the code review are resolved. No further action needed.
+
 ---
