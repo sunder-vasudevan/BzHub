@@ -10,7 +10,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import inventory, sales, contacts, leads, dashboard, auth
+from src.api.routers import inventory, sales, contacts, leads, dashboard, auth, hr, settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,8 @@ app.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
 app.include_router(sales.router, prefix="/sales", tags=["sales"])
 app.include_router(contacts.router, prefix="/contacts", tags=["contacts"])
 app.include_router(leads.router, prefix="/leads", tags=["leads"])
+app.include_router(hr.router, prefix="/hr", tags=["hr"])
+app.include_router(settings.router, prefix="/settings", tags=["settings"])
 
 
 @app.get("/", tags=["root"])
