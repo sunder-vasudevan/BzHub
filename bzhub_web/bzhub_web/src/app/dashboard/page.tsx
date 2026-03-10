@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -46,11 +47,12 @@ interface KPICardProps {
   subtitle?: string
   trend?: string
   trendUp?: boolean
+  trendHref?: string
   icon: React.ReactNode
   iconBg: string
 }
 
-function KPICard({ title, value, subtitle, trend, trendUp, icon, iconBg }: KPICardProps) {
+function KPICard({ title, value, subtitle, trend, trendUp, trendHref, icon, iconBg }: KPICardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -68,13 +70,24 @@ function KPICard({ title, value, subtitle, trend, trendUp, icon, iconBg }: KPICa
           <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
         )}
         {trend && (
-          <p
-            className={`text-xs mt-1 font-medium ${
-              trendUp ? "text-emerald-600" : "text-red-500"
-            }`}
-          >
-            {trend}
-          </p>
+          trendHref ? (
+            <Link
+              href={trendHref}
+              className={`text-xs mt-1 font-medium underline underline-offset-2 ${
+                trendUp ? "text-emerald-600" : "text-red-500"
+              }`}
+            >
+              {trend}
+            </Link>
+          ) : (
+            <p
+              className={`text-xs mt-1 font-medium ${
+                trendUp ? "text-emerald-600" : "text-red-500"
+              }`}
+            >
+              {trend}
+            </p>
+          )
         )}
       </CardContent>
     </Card>
@@ -195,6 +208,7 @@ export default function DashboardPage() {
                 subtitle="items below threshold"
                 trend={kpis.low_stock_count > 0 ? "Needs attention" : "All stocked"}
                 trendUp={kpis.low_stock_count === 0}
+                trendHref={kpis.low_stock_count > 0 ? "/operations?filter=lowstock" : undefined}
                 icon={<AlertTriangle className="h-4 w-4" />}
                 iconBg={kpis.low_stock_count > 0 ? "#EF4444" : "#10B981"}
               />

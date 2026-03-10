@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import AppLayout from "@/components/layout/AppLayout"
 import { toast } from "@/components/ui/toast"
 import { useCurrency } from "@/hooks/useCurrency"
@@ -37,7 +38,7 @@ import {
   deleteInventoryItem,
   fetchSales,
 } from "@/lib/api"
-import { Plus, Search, ShoppingCart, Package, Receipt } from "lucide-react"
+import { Plus, Search, ShoppingCart, Package, Receipt, AlertTriangle } from "lucide-react"
 
 type Tab = "inventory" | "pos" | "bills"
 
@@ -62,10 +63,11 @@ interface Sale {
 }
 
 // ---- Inventory Tab ----
-function InventoryTab() {
+function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [filtered, setFiltered] = useState<InventoryItem[]>([])
   const [search, setSearch] = useState("")
+  const [showLowStock, setShowLowStock] = useState(lowStockOnly)
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState<InventoryItem | null>(null)
@@ -74,7 +76,6 @@ function InventoryTab() {
   const load = useCallback(async () => {
     const d = await fetchInventory().catch(() => [])
     setItems(d)
-    setFiltered(d)
     setLoading(false)
   }, [])
 
@@ -84,16 +85,18 @@ function InventoryTab() {
 
   useEffect(() => {
     const q = search.toLowerCase()
+    let base = items
+    if (showLowStock) base = items.filter((i) => i.quantity <= i.threshold)
     setFiltered(
       q
-        ? items.filter(
+        ? base.filter(
             (i) =>
               i.item_name.toLowerCase().includes(q) ||
               (i.description || "").toLowerCase().includes(q)
           )
-        : items
+        : base
     )
-  }, [search, items])
+  }, [search, items, showLowStock])
 
   async function handleDelete(name: string) {
     if (!confirm(`Delete "${name}"?`)) return
@@ -180,6 +183,18 @@ function InventoryTab() {
 
   return (
     <div className="space-y-4">
+      {showLowStock && (
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span className="flex-1 font-medium">Showing low stock items only</span>
+          <button
+            onClick={() => setShowLowStock(false)}
+            className="text-xs underline underline-offset-2 hover:opacity-70"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -465,8 +480,10 @@ function BillsTab() {
   )
 }
 
-// ---- Main Page ----
-export default function OperationsPage() {
+// ---- Main Page (inner, needs useSearchParams) ----
+function OperationsInner() {
+  const searchParams = useSearchParams()
+  const lowStockFilter = searchParams.get("filter") === "lowstock"
   const [activeTab, setActiveTab] = useState<Tab>("inventory")
   const [inventory, setInventory] = useState<InventoryItem[]>([])
 
@@ -515,12 +532,20 @@ export default function OperationsPage() {
 
         <Card>
           <CardContent className="p-6">
-            {activeTab === "inventory" && <InventoryTab />}
+            {activeTab === "inventory" && <InventoryTab lowStockOnly={lowStockFilter} />}
             {activeTab === "pos" && <POSTab inventory={inventory} />}
             {activeTab === "bills" && <BillsTab />}
           </CardContent>
         </Card>
       </div>
     </AppLayout>
+  )
+}
+
+export default function OperationsPage() {
+  return (
+    <Suspense fallback={null}>
+      <OperationsInner />
+    </Suspense>
   )
 }
