@@ -115,11 +115,30 @@ export default function DashboardPage() {
       .finally(() => setTrendLoading(false))
   }
 
-  function handleCustomDays() {
-    const d = parseInt(customDays)
-    if (!d || d < 1 || d > 365) return
-    handlePeriodChange(d)
+  function handleMonthSelect(value: string) {
+    if (!value) return
+    setCustomDays(value)
+    const [year, month] = value.split("-").map(Number)
+    const start = new Date(year, month - 1, 1)
+    const today = new Date()
+    const days = Math.max(1, Math.ceil((today.getTime() - start.getTime()) / 86400000))
+    setTrendDays(days)
+    setTrendLoading(true)
+    fetchTrend(days)
+      .then(setTrend)
+      .catch(() => {})
+      .finally(() => setTrendLoading(false))
   }
+
+  // Build last 12 months for the dropdown
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() - i)
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    const label = d.toLocaleString("default", { month: "long", year: "numeric" })
+    return { value, label }
+  })
 
   const recentActivity = trend.slice(0, 5).map((row) => ({
     date: row.date,
@@ -226,26 +245,16 @@ export default function DashboardPage() {
                           {p.label}
                         </button>
                       ))}
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          min={1}
-                          max={365}
-                          placeholder="Days"
-                          value={customDays}
-                          onChange={(e) => setCustomDays(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleCustomDays()}
-                          className="w-16 h-7 px-2 text-xs rounded-md border border-border bg-background focus:outline-none focus:ring-1"
-                          style={{ "--tw-ring-color": "#6D28D9" } as React.CSSProperties}
-                        />
-                        <button
-                          onClick={handleCustomDays}
-                          className="px-2 py-1 rounded-md text-xs font-medium text-white transition-colors"
-                          style={{ backgroundColor: "#6D28D9" }}
-                        >
-                          Go
-                        </button>
-                      </div>
+                      <select
+                        value={customDays}
+                        onChange={(e) => handleMonthSelect(e.target.value)}
+                        className="h-7 px-2 text-xs rounded-md border border-border bg-background focus:outline-none"
+                      >
+                        <option value="">Month…</option>
+                        {monthOptions.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </CardHeader>
