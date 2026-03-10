@@ -136,10 +136,17 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
     }
   }
 
-  function stockStatus(item: InventoryItem): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
-    if (item.quantity === 0) return { label: "Out of Stock", variant: "destructive" }
-    if (item.quantity <= item.threshold) return { label: "Low Stock", variant: "outline" }
-    return { label: "In Stock", variant: "secondary" }
+  function stockStatus(item: InventoryItem): { label: string; bg: string; color: string } {
+    if (item.quantity === 0)
+      return { label: "Out of Stock", bg: "#7F1D1D", color: "#fff" }          // red-900
+    const ratio = item.threshold > 0 ? item.quantity / item.threshold : 1
+    if (ratio <= 0.25)
+      return { label: "Critical", bg: "#DC2626", color: "#fff" }              // red-600
+    if (ratio <= 0.5)
+      return { label: "Very Low", bg: "#F87171", color: "#7F1D1D" }           // red-400
+    if (ratio <= 1.0)
+      return { label: "Low Stock", bg: "#FEE2E2", color: "#B91C1C" }          // red-100 / red-700
+    return { label: "In Stock", bg: "#D1FAE5", color: "#065F46" }             // green-100 / green-800
   }
 
   function ItemForm({ item, onClose }: { item?: InventoryItem; onClose: () => void }) {
@@ -254,7 +261,12 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
                   <TableCell className="text-right">{currency}{Number(item.sale_price || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{item.description || "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={status.variant}>{status.label}</Badge>
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: status.bg, color: status.color }}
+                    >
+                      {status.label}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
