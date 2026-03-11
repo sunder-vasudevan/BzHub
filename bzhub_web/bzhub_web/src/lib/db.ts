@@ -304,6 +304,210 @@ export async function deleteSupplier(id: number) {
   if (error) throw new Error(error.message)
 }
 
+// ---- Goals ----
+
+export interface Goal {
+  id: number
+  employee_id: number
+  employee_name?: string
+  title: string
+  description?: string
+  due_date?: string
+  status: string
+}
+
+export async function fetchGoals(): Promise<Goal[]> {
+  const { data, error } = await supabase
+    .from('goals')
+    .select('*, employees(name)')
+    .order('id', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const emp = row.employees as { name?: string } | null
+    return {
+      id: row.id as number,
+      employee_id: row.employee_id as number,
+      employee_name: emp?.name,
+      title: row.title as string,
+      description: row.description as string | undefined,
+      due_date: row.due_date as string | undefined,
+      status: (row.status as string) ?? 'Draft',
+    }
+  })
+}
+
+export async function createGoal(data: {
+  employee_id: number
+  title: string
+  description: string
+  due_date: string
+  status: string
+}): Promise<void> {
+  const { error } = await supabase.from('goals').insert([data])
+  if (error) throw new Error(error.message)
+}
+
+export async function updateGoal(
+  id: number,
+  data: Partial<{ title: string; description: string; due_date: string; status: string }>
+): Promise<void> {
+  const { error } = await supabase.from('goals').update(data).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteGoal(id: number): Promise<void> {
+  const { error } = await supabase.from('goals').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function createGoalCheckin(data: {
+  goal_id: number
+  progress_pct: number
+  notes: string
+  checked_by: string
+}): Promise<void> {
+  const { error } = await supabase.from('goal_checkins').insert([data])
+  if (error) throw new Error(error.message)
+}
+
+// ---- Appraisals ----
+
+export interface Appraisal {
+  id: number
+  employee_id: number
+  employee_name?: string
+  period: string
+  self_rating: number
+  manager_rating: number
+  self_comments?: string
+  manager_comments?: string
+  status: string
+}
+
+export async function fetchAppraisals(): Promise<Appraisal[]> {
+  const { data, error } = await supabase
+    .from('appraisals')
+    .select('*, employees(name)')
+    .order('id', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const emp = row.employees as { name?: string } | null
+    return {
+      id: row.id as number,
+      employee_id: row.employee_id as number,
+      employee_name: emp?.name,
+      period: row.period as string,
+      self_rating: (row.self_rating as number) ?? 0,
+      manager_rating: (row.manager_rating as number) ?? 0,
+      self_comments: row.self_comments as string | undefined,
+      manager_comments: row.manager_comments as string | undefined,
+      status: (row.status as string) ?? 'Pending',
+    }
+  })
+}
+
+export async function createAppraisal(data: {
+  employee_id: number
+  period: string
+  self_rating: number
+  manager_rating: number
+  self_comments: string
+  manager_comments: string
+  status: string
+}): Promise<void> {
+  const { error } = await supabase.from('appraisals').insert([data])
+  if (error) throw new Error(error.message)
+}
+
+export async function updateAppraisal(
+  id: number,
+  data: Partial<{
+    period: string
+    self_rating: number
+    manager_rating: number
+    self_comments: string
+    manager_comments: string
+    status: string
+  }>
+): Promise<void> {
+  const { error } = await supabase.from('appraisals').update(data).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteAppraisal(id: number): Promise<void> {
+  const { error } = await supabase.from('appraisals').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+// ---- Skills ----
+
+export interface Skill {
+  id: number
+  name: string
+  category: string
+}
+
+export interface EmployeeSkill {
+  id: number
+  employee_id: number
+  skill_id: number
+  proficiency: string
+  skill_name?: string
+  skill_category?: string
+}
+
+export async function fetchSkills(): Promise<Skill[]> {
+  const { data, error } = await supabase
+    .from('skills')
+    .select('*')
+    .order('category')
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function createSkill(data: { name: string; category: string }): Promise<void> {
+  const { error } = await supabase.from('skills').insert([data])
+  if (error) throw new Error(error.message)
+}
+
+export async function fetchEmployeeSkills(employeeId: number): Promise<EmployeeSkill[]> {
+  const { data, error } = await supabase
+    .from('employee_skills')
+    .select('*, skills(name, category)')
+    .eq('employee_id', employeeId)
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const skill = row.skills as { name?: string; category?: string } | null
+    return {
+      id: row.id as number,
+      employee_id: row.employee_id as number,
+      skill_id: row.skill_id as number,
+      proficiency: row.proficiency as string,
+      skill_name: skill?.name,
+      skill_category: skill?.category,
+    }
+  })
+}
+
+export async function addEmployeeSkill(data: {
+  employee_id: number
+  skill_id: number
+  proficiency: string
+}): Promise<void> {
+  const { error } = await supabase.from('employee_skills').insert([data])
+  if (error) throw new Error(error.message)
+}
+
+export async function updateEmployeeSkill(id: number, proficiency: string): Promise<void> {
+  const { error } = await supabase.from('employee_skills').update({ proficiency }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteEmployeeSkill(id: number): Promise<void> {
+  const { error } = await supabase.from('employee_skills').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ---- Auth (simple hardcoded for now — replace with Supabase Auth later) ----
 
 export async function login(username: string, password: string) {
