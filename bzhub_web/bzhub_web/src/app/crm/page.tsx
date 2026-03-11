@@ -158,7 +158,7 @@ export default function CRMPage() {
 
   return (
     <AppLayout activePage="crm">
-      <div className="px-6 py-8">
+      <div className="px-4 py-4 md:px-6 md:py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>

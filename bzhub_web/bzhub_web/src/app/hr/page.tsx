@@ -133,7 +133,7 @@ function EmployeesTab() {
   function EmployeeForm({ emp, onClose }: { emp?: Employee; onClose: () => void }) {
     return (
       <form onSubmit={(e) => handleSave(e, emp?.id)}>
-        <div className="grid grid-cols-2 gap-4 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
           <div className="col-span-2 space-y-1.5">
             <Label htmlFor="name">Full Name *</Label>
             <Input name="name" required defaultValue={emp?.name} placeholder="e.g. Jane Smith" />
@@ -210,6 +210,7 @@ function EmployeesTab() {
           />
         </div>
       ) : (
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -273,6 +274,7 @@ function EmployeesTab() {
             )}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   )
@@ -351,6 +353,7 @@ function PayrollTab() {
           />
         </div>
       ) : (
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -394,6 +397,7 @@ function PayrollTab() {
             )}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   )
@@ -410,7 +414,7 @@ export default function HRPage() {
 
   return (
     <AppLayout activePage="hr">
-      <div className="px-6 py-8">
+      <div className="px-4 py-4 md:px-6 md:py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Human Resources</h1>
           <p className="text-sm text-muted-foreground">Employee records and payroll management</p>

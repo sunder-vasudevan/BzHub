@@ -178,7 +178,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout activePage="dashboard">
-      <div className="px-6 py-8">
+      <div className="px-4 py-4 md:px-6 md:py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">

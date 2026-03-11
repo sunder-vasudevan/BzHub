@@ -22,6 +22,8 @@ interface SidebarProps {
   activePage: string
   user: string
   onLogout: () => void
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
 const navItems = [
@@ -32,7 +34,7 @@ const navItems = [
   { href: "/settings", label: "Settings", key: "settings", icon: Settings },
 ]
 
-export default function Sidebar({ activePage, user, onLogout }: SidebarProps) {
+export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
 
   const initials = user
@@ -45,10 +47,10 @@ export default function Sidebar({ activePage, user, onLogout }: SidebarProps) {
   return (
     <>
       {/* Mobile overlay */}
-      {!collapsed && (
+      {mobileOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/40 md:hidden"
-          onClick={() => setCollapsed(true)}
+          onClick={onMobileClose}
         />
       )}
 
@@ -56,7 +58,8 @@ export default function Sidebar({ activePage, user, onLogout }: SidebarProps) {
         className={cn(
           "flex flex-col h-screen bg-white border-r border-border transition-all duration-300 z-30",
           collapsed ? "w-16" : "w-56",
-          "fixed md:static"
+          "fixed md:static",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         {/* Logo + toggle */}

@@ -240,7 +240,7 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
 
     return (
       <form onSubmit={(e) => handleSave(e, item?.item_name, imageData)}>
-        <div className="grid grid-cols-2 gap-4 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
           <div className="space-y-1.5">
             <Label>Item Name *</Label>
             <Input name="item_name" required defaultValue={item?.item_name} />
@@ -364,6 +364,7 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
       {loading ? (
         <p className="text-muted-foreground text-sm py-4">Loading…</p>
       ) : (
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -444,6 +445,7 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
             )}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   )
@@ -469,7 +471,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
   const total = cart.reduce((s, c) => s + Number(c.item.sale_price || 0) * c.qty, 0)
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col md:flex-row gap-6">
       <div className="flex-1">
         <h3 className="text-sm font-semibold mb-3">Products</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -507,7 +509,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
         </div>
       </div>
 
-      <div className="w-64 flex-shrink-0">
+      <div className="w-full md:w-64 md:flex-shrink-0">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -645,6 +647,7 @@ function BillsTab() {
         <p className="text-muted-foreground text-sm py-4">Loading…</p>
       ) : (
         <>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -693,6 +696,7 @@ function BillsTab() {
               )}
             </TableBody>
           </Table>
+          </div>
           {filtered.length > 0 && (
             <div className="text-right text-sm font-semibold mt-2">
               Total: {currency}{total.toFixed(2)}{" "}
@@ -728,7 +732,7 @@ function OperationsInner() {
 
   return (
     <AppLayout activePage="operations">
-      <div className="px-6 py-8">
+      <div className="px-4 py-4 md:px-6 md:py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Operations</h1>
           <p className="text-sm text-muted-foreground">Inventory, POS, and sales management</p>
