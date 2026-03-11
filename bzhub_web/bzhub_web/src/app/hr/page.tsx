@@ -74,8 +74,7 @@ function EmployeesTab() {
     try {
       setError("")
       const data = await fetchEmployees()
-      // API may return { employees: [...] } or a plain array
-      const list = Array.isArray(data) ? data : (data?.employees ?? [])
+      const list = Array.isArray(data) ? data : []
       setEmployees(list)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load employees")
@@ -288,7 +287,7 @@ function PayrollTab() {
   useEffect(() => {
     fetchPayrolls()
       .then((data) => {
-        const list = Array.isArray(data) ? data : (data?.payrolls ?? [])
+        const list = Array.isArray(data) ? data : []
         setRecords(list)
       })
       .catch((e: unknown) => {

@@ -436,7 +436,7 @@ class SQLiteAdapter(DatabaseAdapter):
         try:
             conn = sqlite3.connect(self.db_file)
             cursor = conn.cursor()
-            cursor.execute('SELECT item_name, quantity, threshold, cost_price, sale_price, description FROM inventory ORDER BY item_name')
+            cursor.execute('SELECT item_name, quantity, threshold, cost_price, sale_price, description, image_path FROM inventory ORDER BY item_name')
             rows = cursor.fetchall()
             conn.close()
             return rows

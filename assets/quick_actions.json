@@ -6,5 +6,9 @@
   {
     "label": "Bills",
     "target": "Bills"
+  },
+  {
+    "label": "Low Stock",
+    "target": "low_stock"
   }
 ]

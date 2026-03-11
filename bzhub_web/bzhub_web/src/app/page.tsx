@@ -104,7 +104,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            BzHub ERP v2.0 &mdash; Requires API server running
+            BzHub ERP v4.0
           </p>
         </CardContent>
       </Card>

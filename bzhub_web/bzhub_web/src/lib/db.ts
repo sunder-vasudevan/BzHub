@@ -90,16 +90,17 @@ export async function fetchLeads(stage?: string) {
 export async function fetchPipeline() {
   const { data, error } = await supabase
     .from('crm_leads')
-    .select('stage, value')
+    .select('*')
+    .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
-  // Group by stage
-  const stages: Record<string, { count: number; value: number }> = {}
+  // Group leads by stage — matches CRM page's Record<string, Lead[]> shape
+  const stages: Record<string, unknown[]> = {}
   for (const row of data ?? []) {
-    if (!stages[row.stage]) stages[row.stage] = { count: 0, value: 0 }
-    stages[row.stage].count++
-    stages[row.stage].value += row.value ?? 0
+    const s: string = row.stage ?? 'New'
+    if (!stages[s]) stages[s] = []
+    stages[s].push(row)
   }
-  return stages
+  return stages as Record<string, never[]>
 }
 
 export async function createLead(item: Record<string, unknown>) {
@@ -275,6 +276,16 @@ export async function fetchProductVelocity(days = 30) {
     fast: sorted.slice(0, 5),
     slow: sorted.slice(-5).reverse(),
   }
+}
+
+// ---- Auth (simple hardcoded for now — replace with Supabase Auth later) ----
+
+export async function login(username: string, password: string) {
+  // Temporary: accept admin/admin123 locally; replace with Supabase Auth when ready
+  if (username === 'admin' && password === 'admin123') {
+    return { user: 'admin', role: 'admin', token: 'local' }
+  }
+  throw new Error('401 Invalid credentials')
 }
 
 // ---- Health ----

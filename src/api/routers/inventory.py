@@ -16,6 +16,7 @@ class InventoryItem(BaseModel):
     cost_price: float = 0.0
     sale_price: float = 0.0
     description: Optional[str] = None
+    image_path: Optional[str] = None
 
 
 class InventoryUpdate(BaseModel):
@@ -24,6 +25,7 @@ class InventoryUpdate(BaseModel):
     cost_price: Optional[float] = None
     sale_price: Optional[float] = None
     description: Optional[str] = None
+    image_path: Optional[str] = None
 
 
 class InventoryItemResponse(BaseModel):
@@ -78,6 +80,7 @@ def add_inventory_item(
         cost_price=item.cost_price,
         sale_price=item.sale_price,
         description=item.description or "",
+        image_path=item.image_path,
     )
     if not ok:
         raise HTTPException(status_code=409, detail="Item already exists or could not be added")

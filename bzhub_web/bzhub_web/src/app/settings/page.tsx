@@ -26,7 +26,7 @@ const CURRENCIES = [
   { symbol: "SGD", label: "Singapore Dollar (SGD)" },
 ]
 
-interface CompanyData {
+interface CompanyData extends Record<string, unknown> {
   company_name?: string
   address?: string
   phone?: string
