@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { fetchCompanySettings, saveCompanySettings, fetchHealth } from "@/lib/api"
+import { fetchCompanySettings, saveCompanySettings, fetchHealth } from "@/lib/db"
 import { Building2, User, Info, CheckCircle2, XCircle, Coins } from "lucide-react"
 
 const CURRENCIES = [

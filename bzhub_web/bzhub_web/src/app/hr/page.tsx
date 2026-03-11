@@ -35,7 +35,7 @@ import {
   updateEmployee,
   deleteEmployee,
   fetchPayrolls,
-} from "@/lib/api"
+} from "@/lib/db"
 import { Plus, Users, DollarSign } from "lucide-react"
 
 type Tab = "employees" | "payroll"

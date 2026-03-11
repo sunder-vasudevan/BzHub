@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { fetchPipeline, createLead, updateLead, deleteLead, fetchContacts } from "@/lib/api"
+import { fetchPipeline, createLead, updateLead, deleteLead, fetchContacts } from "@/lib/db"
 import { Plus, RefreshCw, TrendingUp, DollarSign } from "lucide-react"
 
 const STAGES = ["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"] as const

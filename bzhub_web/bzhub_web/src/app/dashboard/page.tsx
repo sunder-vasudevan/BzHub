@@ -5,7 +5,7 @@ import Link from "next/link"
 import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { fetchKPIs, fetchTrend, fetchProductVelocity } from "@/lib/api"
+import { fetchKPIs, fetchTrend, fetchProductVelocity } from "@/lib/db"
 import {
   DollarSign,
   Package,
@@ -126,7 +126,11 @@ export default function DashboardPage() {
   const currency = useCurrency()
 
   useEffect(() => {
-    Promise.all([fetchKPIs(), fetchTrend(trendDays), fetchProductVelocity(30)])
+    Promise.all([
+      fetchKPIs(),
+      fetchTrend(trendDays),
+      fetchProductVelocity(30).catch(() => ({ fast: [], slow: [] })),
+    ])
       .then(([k, t, v]) => { setKpis(k); setTrend(t); setVelocity(v) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))

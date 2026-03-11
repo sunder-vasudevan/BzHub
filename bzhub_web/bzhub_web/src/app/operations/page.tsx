@@ -36,7 +36,7 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
   fetchSales,
-} from "@/lib/api"
+} from "@/lib/db"
 import {
   Plus,
   Search,
