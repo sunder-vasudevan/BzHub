@@ -19,3 +19,6 @@ venv/
 *.sqlite3
 *.xlsx
 
+# Separate projects (not part of BzHub)
+resume_customizer_app/
+

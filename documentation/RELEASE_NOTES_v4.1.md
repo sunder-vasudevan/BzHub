@@ -4,6 +4,15 @@
 
 ---
 
+## v4.1.2 — Vercel Build Fix
+**Date:** 2026-03-11
+
+### Fixes
+- **`next.config.ts` → `next.config.js`** — Next.js 14 does not support TypeScript config file; replaced with `.js` to fix Vercel build failure
+- **Excluded `resume_customizer_app/`** from BzHub git repo via `.gitignore` — was a nested git repo causing Vercel submodule warning and build instability
+
+---
+
 ## What's New in v4.1
 
 ### Hosting
@@ -35,6 +44,30 @@
 - `vercel.json` added for Vercel build config
 - `.env.local` holds Supabase keys (gitignored)
 - Prompts log maintained at `memory/prompts_log.md`
+
+---
+
+## v4.1.1 — Mobile & Tablet Support
+**Date:** 2026-03-11
+
+### Responsive Layout
+- **Mobile top bar** — hamburger menu + BzHub logo, visible only on phones/tablets
+- **Sidebar** — hidden off-screen on mobile by default, slides in on hamburger tap, overlay closes it
+- **Page padding** — reduced on mobile (`px-4 py-4`) vs desktop (`px-6 py-8`) across all pages
+
+### Pages Updated
+- **Operations** — inventory table scrolls horizontally, POS stacks vertically on mobile, item form single column on mobile
+- **HR** — employee + payroll tables scroll horizontally, employee form single column on mobile
+- **CRM** — tighter padding (Kanban already had horizontal scroll)
+- **Dashboard** — tighter padding on mobile
+
+### Files Changed
+- `src/components/layout/AppLayout.tsx`
+- `src/components/layout/Sidebar.tsx`
+- `src/app/dashboard/page.tsx`
+- `src/app/operations/page.tsx`
+- `src/app/hr/page.tsx`
+- `src/app/crm/page.tsx`
 
 ---
 
