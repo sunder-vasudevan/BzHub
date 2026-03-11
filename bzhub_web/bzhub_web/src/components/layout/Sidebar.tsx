@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   BarChart3,
+  HelpCircle,
 } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/hr", label: "HR", key: "hr", icon: Users },
   { href: "/reports", label: "Reports", key: "reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", key: "settings", icon: Settings },
+  { href: "/help", label: "Help", key: "help", icon: HelpCircle },
 ]
 
 export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
