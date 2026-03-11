@@ -20,10 +20,10 @@ def get_kpis(
     """Return key performance indicators for the dashboard."""
     all_items = inv_svc.get_all_items()
     inventory_value = sum(
-        (row[2] or 0) * (row[4] or 0)  # quantity * cost_price
+        (row[1] or 0) * (row[3] or 0)  # quantity * cost_price
         for row in all_items
     )
-    low_stock = [r for r in all_items if (r[2] or 0) <= (r[3] or 0) and (r[3] or 0) > 0]
+    low_stock = [r for r in all_items if (r[1] or 0) <= (r[2] or 0) and (r[2] or 0) > 0]
 
     today = datetime.now().strftime("%Y-%m-%d")
     today_sales = pos_svc.db.get_sales_by_date(today)
@@ -76,3 +76,19 @@ def get_trend(
         {"date": row[0], "total": round(row[1], 2)}
         for row in trend
     ]
+
+
+@router.get("/product-velocity")
+def get_product_velocity(
+    days: int = 30,
+    pos_svc: POSService = Depends(get_pos_service),
+):
+    """Return fast and slow moving products based on sales in last N days."""
+    now = datetime.now()
+    start = (now - timedelta(days=days)).strftime("%Y-%m-%d")
+    end = now.strftime("%Y-%m-%d")
+    rows = pos_svc.db.get_sales_summary_by_item(start, end)
+    # rows: (item_name, total_qty, total_amount) ordered by qty DESC
+    fast = [{"item_name": r[0], "qty_sold": int(r[1]), "total": round(float(r[2]), 2)} for r in rows[:5]]
+    slow = [{"item_name": r[0], "qty_sold": int(r[1]), "total": round(float(r[2]), 2)} for r in rows[-5:] if rows]
+    return {"fast": fast, "slow": slow}

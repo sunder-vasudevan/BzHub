@@ -5,7 +5,7 @@ import Link from "next/link"
 import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { fetchKPIs, fetchTrend } from "@/lib/api"
+import { fetchKPIs, fetchTrend, fetchProductVelocity } from "@/lib/api"
 import {
   DollarSign,
   Package,
@@ -38,6 +38,12 @@ interface KPIs {
 
 interface TrendRow {
   date: string
+  total: number
+}
+
+interface VelocityItem {
+  item_name: string
+  qty_sold: number
   total: number
 }
 
@@ -111,6 +117,7 @@ function compactINR(n: number): string {
 export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [trend, setTrend] = useState<TrendRow[]>([])
+  const [velocity, setVelocity] = useState<{ fast: VelocityItem[]; slow: VelocityItem[] }>({ fast: [], slow: [] })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [trendDays, setTrendDays] = useState(14)
@@ -119,8 +126,8 @@ export default function DashboardPage() {
   const currency = useCurrency()
 
   useEffect(() => {
-    Promise.all([fetchKPIs(), fetchTrend(trendDays)])
-      .then(([k, t]) => { setKpis(k); setTrend(t) })
+    Promise.all([fetchKPIs(), fetchTrend(trendDays), fetchProductVelocity(30)])
+      .then(([k, t, v]) => { setKpis(k); setTrend(t); setVelocity(v) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -241,6 +248,68 @@ export default function DashboardPage() {
                 icon={<TrendingUp className="h-4 w-4" />}
                 iconBg={kpis.growth_pct >= 0 ? "#10B981" : "#EF4444"}
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Fast Movers */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    Fast-Moving Products <span className="text-muted-foreground font-normal text-xs">(last 30 days)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {velocity.fast.length === 0 ? (
+                    <p className="text-muted-foreground text-xs italic">No sales data yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {velocity.fast.map((item, i) => (
+                        <div key={item.item_name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-emerald-600 w-4">{i + 1}</span>
+                            <span className="text-sm truncate max-w-[160px]">{item.item_name}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <span className="text-xs font-semibold">{item.qty_sold} units</span>
+                            <span className="text-xs text-muted-foreground ml-2">{currency}{item.total.toFixed(0)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Slow Movers */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-amber-500" />
+                    Slow-Moving Products <span className="text-muted-foreground font-normal text-xs">(last 30 days)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {velocity.slow.length === 0 ? (
+                    <p className="text-muted-foreground text-xs italic">No sales data yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {velocity.slow.map((item, i) => (
+                        <div key={item.item_name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-amber-500 w-4">{i + 1}</span>
+                            <span className="text-sm truncate max-w-[160px]">{item.item_name}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <span className="text-xs font-semibold">{item.qty_sold} units</span>
+                            <span className="text-xs text-muted-foreground ml-2">{currency}{item.total.toFixed(0)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

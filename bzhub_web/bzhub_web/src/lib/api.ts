@@ -169,3 +169,7 @@ export async function saveCompanySettings(data: Record<string, unknown>) {
 export async function fetchHealth() {
   return apiFetch('/health');
 }
+
+export async function fetchProductVelocity(days = 30) {
+  return apiFetch(`/dashboard/product-velocity?days=${days}`);
+}
