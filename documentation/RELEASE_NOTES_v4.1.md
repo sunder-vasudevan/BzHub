@@ -4,6 +4,27 @@
 
 ---
 
+## v4.2.0 — Reports & Supplier Management
+**Date:** 2026-03-11
+
+### New Features
+- **Reports page** (`/reports`) — 3-tab reports module:
+  - Sales Report — monthly aggregate table (revenue, # sales, avg order value)
+  - Top Sellers — bar chart of top 10 products by quantity sold
+  - Inventory Report — full stock table with value calculation and low-stock badges
+- **Supplier Management** — new Suppliers tab in Operations:
+  - Full CRUD: add, edit, delete suppliers
+  - Fields: name, contact person, phone, email, notes
+- **Sidebar** — Reports nav item added (BarChart3 icon)
+
+### Files Changed
+- `src/app/reports/page.tsx` — new Reports page
+- `src/app/operations/page.tsx` — Suppliers tab added
+- `src/components/layout/Sidebar.tsx` — Reports nav link
+- `src/lib/db.ts` — supplier CRUD functions
+
+---
+
 ## v4.1.2 — Vercel Build Fix
 **Date:** 2026-03-11
 

@@ -278,6 +278,32 @@ export async function fetchProductVelocity(days = 30) {
   }
 }
 
+// ---- Suppliers ----
+
+export async function fetchSuppliers() {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .select('*')
+    .order('name')
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function createSupplier(item: Record<string, unknown>) {
+  const { error } = await supabase.from('suppliers').insert([item])
+  if (error) throw new Error(error.message)
+}
+
+export async function updateSupplier(id: number, updates: Record<string, unknown>) {
+  const { error } = await supabase.from('suppliers').update(updates).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteSupplier(id: number) {
+  const { error } = await supabase.from('suppliers').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ---- Auth (simple hardcoded for now — replace with Supabase Auth later) ----
 
 export async function login(username: string, password: string) {

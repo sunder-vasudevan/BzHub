@@ -36,6 +36,10 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
   fetchSales,
+  fetchSuppliers,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
 } from "@/lib/db"
 import {
   Plus,
@@ -47,9 +51,10 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  Truck,
 } from "lucide-react"
 
-type Tab = "inventory" | "pos" | "bills"
+type Tab = "inventory" | "pos" | "bills" | "suppliers"
 type SortDir = "asc" | "desc" | "none"
 
 interface InventoryItem {
@@ -711,6 +716,211 @@ function BillsTab() {
   )
 }
 
+// ---- Suppliers Tab ----
+interface Supplier {
+  id: number
+  name: string
+  contact_person?: string
+  phone?: string
+  email?: string
+  notes?: string
+}
+
+function SuppliersTab() {
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [showAdd, setShowAdd] = useState(false)
+  const [editing, setEditing] = useState<Supplier | null>(null)
+
+  const load = useCallback(async () => {
+    try {
+      setError("")
+      const data = await fetchSuppliers()
+      setSuppliers(Array.isArray(data) ? data : [])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load suppliers")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleDelete(id: number, name: string) {
+    if (!confirm(`Delete supplier "${name}"?`)) return
+    try {
+      await deleteSupplier(id)
+      await load()
+      toast("Supplier deleted", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Delete failed", "error")
+    }
+  }
+
+  async function handleSave(e: React.FormEvent<HTMLFormElement>, supplierId?: number) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const data = {
+      name: fd.get("name") as string,
+      contact_person: fd.get("contact_person") as string,
+      phone: fd.get("phone") as string,
+      email: fd.get("email") as string,
+      notes: fd.get("notes") as string,
+    }
+    try {
+      if (supplierId) {
+        await updateSupplier(supplierId, data)
+        setEditing(null)
+        toast("Supplier updated", "success")
+      } else {
+        await createSupplier(data)
+        setShowAdd(false)
+        toast("Supplier added", "success")
+      }
+      await load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Save failed", "error")
+    }
+  }
+
+  function SupplierForm({ supplier, onClose }: { supplier?: Supplier; onClose: () => void }) {
+    return (
+      <form onSubmit={(e) => handleSave(e, supplier?.id)}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+          <div className="col-span-2 space-y-1.5">
+            <Label htmlFor="name">Supplier Name *</Label>
+            <Input name="name" required defaultValue={supplier?.name} placeholder="e.g. Acme Corp" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="contact_person">Contact Person</Label>
+            <Input name="contact_person" defaultValue={supplier?.contact_person} placeholder="e.g. John Doe" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Phone</Label>
+            <Input name="phone" defaultValue={supplier?.phone} placeholder="+1 555 000 0000" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input name="email" type="email" defaultValue={supplier?.email} placeholder="supplier@example.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Notes</Label>
+            <Input name="notes" defaultValue={supplier?.notes} placeholder="Optional notes" />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          </DialogClose>
+          <Button type="submit">{supplier ? "Save Changes" : "Add Supplier"}</Button>
+        </DialogFooter>
+      </form>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{suppliers.length} suppliers</p>
+        <Button onClick={() => setShowAdd(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" /> Add Supplier
+        </Button>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Add dialog */}
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Supplier</DialogTitle>
+          </DialogHeader>
+          <SupplierForm onClose={() => setShowAdd(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit — {editing?.name}</DialogTitle>
+          </DialogHeader>
+          {editing && <SupplierForm supplier={editing} onClose={() => setEditing(null)} />}
+        </DialogContent>
+      </Dialog>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div
+            className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Contact Person</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Notes</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {suppliers.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">{s.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{s.contact_person || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{s.phone || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{s.email || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs max-w-[160px] truncate">
+                    {s.notes || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-[#6D28D9]"
+                        onClick={() => setEditing(s)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive"
+                        onClick={() => handleDelete(s.id, s.name)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {suppliers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground italic py-8">
+                    No suppliers found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- Main Page ----
 function OperationsInner() {
   const searchParams = useSearchParams()
@@ -728,6 +938,7 @@ function OperationsInner() {
     { key: "inventory", label: "Inventory", icon: <Package className="h-4 w-4" /> },
     { key: "pos", label: "POS", icon: <ShoppingCart className="h-4 w-4" /> },
     { key: "bills", label: "Bills", icon: <Receipt className="h-4 w-4" /> },
+    { key: "suppliers", label: "Suppliers", icon: <Truck className="h-4 w-4" /> },
   ]
 
   return (
@@ -735,10 +946,10 @@ function OperationsInner() {
       <div className="px-4 py-4 md:px-6 md:py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Operations</h1>
-          <p className="text-sm text-muted-foreground">Inventory, POS, and sales management</p>
+          <p className="text-sm text-muted-foreground">Inventory, POS, sales management, and suppliers</p>
         </div>
 
-        <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 shadow-sm w-fit border border-border">
+        <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 shadow-sm w-fit border border-border flex-wrap">
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -761,6 +972,7 @@ function OperationsInner() {
             {activeTab === "inventory" && <InventoryTab lowStockOnly={lowStockFilter} />}
             {activeTab === "pos" && <POSTab inventory={inventory} />}
             {activeTab === "bills" && <BillsTab />}
+            {activeTab === "suppliers" && <SuppliersTab />}
           </CardContent>
         </Card>
       </div>
