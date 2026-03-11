@@ -160,6 +160,11 @@ export default function Sidebar({ activePage, user, onLogout }: SidebarProps) {
             <LogOut className="h-4 w-4" />
             {!collapsed && <span>Logout</span>}
           </Button>
+          {!collapsed && (
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-3 select-none">
+              BzHub v4.0.0
+            </p>
+          )}
         </div>
       </aside>
     </>

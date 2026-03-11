@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="BizHub API",
-    version="2.0.0",
+    version="4.0.0",
     description="BizHub ERP REST API — connects desktop data to web frontend",
 )
 
@@ -45,7 +45,7 @@ app.include_router(settings.router, prefix="/settings", tags=["settings"])
 @app.get("/", tags=["root"])
 def root():
     """Health check endpoint."""
-    return {"status": "ok", "app": "BizHub API", "version": "2.0.0"}
+    return {"status": "ok", "app": "BizHub API", "version": "4.0.0"}
 
 
 @app.get("/health", tags=["root"])
