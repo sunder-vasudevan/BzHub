@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { fetchKPIs, fetchTrend, fetchProductVelocity } from "@/lib/db"
+import { fetchKPIs, fetchTrend, fetchProductVelocity, fetchInsights, Insight } from "@/lib/db"
 import {
   DollarSign,
   Package,
@@ -15,6 +15,9 @@ import {
   TrendingUp,
   BarChart3,
   Settings2,
+  Lightbulb,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import {
   LineChart,
@@ -169,6 +172,8 @@ export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [trend, setTrend] = useState<TrendRow[]>([])
   const [velocity, setVelocity] = useState<{ fast: VelocityItem[]; slow: VelocityItem[] }>({ fast: [], slow: [] })
+  const [insights, setInsights] = useState<Insight[]>([])
+  const [insightsOpen, setInsightsOpen] = useState(true)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [trendDays, setTrendDays] = useState(30)
@@ -217,6 +222,7 @@ export default function DashboardPage() {
       .then(([k, t, v]) => { setKpis(k); setTrend(t); setVelocity(v) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
+    fetchInsights().then(setInsights).catch(() => {})
   }, [])
 
   function handlePeriodChange(days: number) {
@@ -382,6 +388,50 @@ export default function DashboardPage() {
                 />
               )}
             </div>
+
+            {/* AI Insights */}
+            {insights.length > 0 && (
+              <Card className="mb-6">
+                <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => setInsightsOpen(o => !o)}>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
+                      Smart Insights
+                      <span className="ml-1 text-xs font-normal text-muted-foreground">
+                        {insights.filter(i => i.severity === 'warning').length > 0 && (
+                          <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                            {insights.filter(i => i.severity === 'warning').length} action{insights.filter(i => i.severity === 'warning').length > 1 ? 's' : ''} needed
+                          </span>
+                        )}
+                      </span>
+                    </CardTitle>
+                    {insightsOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </CardHeader>
+                {insightsOpen && (
+                  <CardContent className="pt-0">
+                    <ul className="space-y-2">
+                      {insights.map((insight) => (
+                        <li key={insight.id} className="flex items-start gap-2.5">
+                          <span
+                            className="mt-0.5 h-2 w-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: insight.severity === 'warning' ? '#F59E0B' : '#6B7280', marginTop: '6px' }}
+                          />
+                          <span className="text-sm text-foreground flex-1">
+                            {insight.message}
+                            {insight.href && (
+                              <Link href={insight.href} className="ml-2 text-xs underline underline-offset-2" style={{ color: "var(--brand-color)" }}>
+                                View →
+                              </Link>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                )}
+              </Card>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Fast Movers */}

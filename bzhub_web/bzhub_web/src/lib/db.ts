@@ -700,3 +700,149 @@ export async function login(username: string, password: string) {
 export async function fetchHealth() {
   return { status: 'ok', source: 'supabase' }
 }
+
+// ---- AI Insights ----
+
+export interface Insight {
+  id: string
+  severity: 'warning' | 'info'
+  message: string
+  href?: string
+}
+
+export async function fetchInsights(): Promise<Insight[]> {
+  const insights: Insight[] = []
+  const today = new Date()
+  const todayStr = today.toISOString().slice(0, 10)
+
+  // --- Stock depletion ---
+  try {
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const [invRes, salesRes] = await Promise.all([
+      supabase.from('inventory').select('item_name, quantity'),
+      supabase.from('sales').select('item_name, quantity, sale_date')
+        .gte('sale_date', thirtyDaysAgo.toISOString().slice(0, 10)),
+    ])
+    const inventory = (invRes.data ?? []) as { item_name: string; quantity: number }[]
+    const salesRows = (salesRes.data ?? []) as { item_name: string; quantity: number }[]
+
+    const velocityMap: Record<string, number> = {}
+    for (const row of salesRows) {
+      if (row.item_name) velocityMap[row.item_name] = (velocityMap[row.item_name] ?? 0) + (row.quantity ?? 0)
+    }
+    for (const key of Object.keys(velocityMap)) velocityMap[key] = velocityMap[key] / 30
+
+    for (const item of inventory) {
+      const dailyVelocity = velocityMap[item.item_name] ?? 0
+      if (dailyVelocity > 0 && item.quantity > 0) {
+        const daysLeft = Math.round(item.quantity / dailyVelocity)
+        if (daysLeft <= 7) {
+          insights.push({
+            id: `stock_critical_${item.item_name}`,
+            severity: 'warning',
+            message: `${item.item_name} will run out in ~${daysLeft} day${daysLeft === 1 ? '' : 's'} at current sales velocity`,
+            href: '/operations',
+          })
+        } else if (daysLeft <= 14) {
+          insights.push({
+            id: `stock_low_${item.item_name}`,
+            severity: 'info',
+            message: `${item.item_name} has ~${daysLeft} days of stock remaining — consider reordering`,
+            href: '/operations',
+          })
+        }
+      }
+    }
+  } catch {}
+
+  // --- Pending appraisals ---
+  try {
+    const { data: appraisals } = await supabase.from('appraisals').select('id').eq('status', 'Pending')
+    const count = (appraisals ?? []).length
+    if (count > 0) {
+      insights.push({
+        id: 'hr_pending_appraisals',
+        severity: 'info',
+        message: `${count} appraisal${count > 1 ? 's' : ''} awaiting manager review`,
+        href: '/hr',
+      })
+    }
+  } catch {}
+
+  // --- Overdue goals ---
+  try {
+    const { data: goals } = await supabase
+      .from('goals')
+      .select('id')
+      .lt('due_date', todayStr)
+      .not('status', 'in', '("Completed","Done")')
+    const count = (goals ?? []).length
+    if (count > 0) {
+      insights.push({
+        id: 'hr_overdue_goals',
+        severity: 'warning',
+        message: `${count} goal${count > 1 ? 's' : ''} past due date and not yet completed`,
+        href: '/hr',
+      })
+    }
+  } catch {}
+
+  // --- Pending approvals ---
+  try {
+    const [leaveRes, poRes] = await Promise.all([
+      supabase.from('leave_requests').select('id').eq('status', 'Pending'),
+      supabase.from('purchase_orders').select('id').eq('status', 'Pending'),
+    ])
+    const pendingLeave = (leaveRes.data ?? []).length
+    const pendingPOs = (poRes.data ?? []).length
+    if (pendingLeave > 0) {
+      insights.push({
+        id: 'approvals_leave',
+        severity: 'info',
+        message: `${pendingLeave} leave request${pendingLeave > 1 ? 's' : ''} pending approval`,
+        href: '/hr',
+      })
+    }
+    if (pendingPOs > 0) {
+      insights.push({
+        id: 'approvals_po',
+        severity: 'info',
+        message: `${pendingPOs} purchase order${pendingPOs > 1 ? 's' : ''} pending approval`,
+        href: '/operations',
+      })
+    }
+  } catch {}
+
+  // --- Sales anomaly: this week vs prior 3-week average ---
+  try {
+    const d28 = new Date(); d28.setDate(d28.getDate() - 28)
+    const d7 = new Date(); d7.setDate(d7.getDate() - 7)
+    const d28Str = d28.toISOString().slice(0, 10)
+    const d7Str = d7.toISOString().slice(0, 10)
+
+    const { data: salesData } = await supabase
+      .from('sales')
+      .select('total_amount, sale_date')
+      .gte('sale_date', d28Str)
+
+    const rows = (salesData ?? []) as { total_amount: number; sale_date: string }[]
+    const thisWeek = rows.filter(r => r.sale_date >= d7Str).reduce((s, r) => s + (r.total_amount ?? 0), 0)
+    const prior3Weeks = rows.filter(r => r.sale_date < d7Str).reduce((s, r) => s + (r.total_amount ?? 0), 0)
+    const priorWeekAvg = prior3Weeks / 3
+
+    if (priorWeekAvg > 0 && thisWeek < priorWeekAvg * 0.8) {
+      const dropPct = Math.round((1 - thisWeek / priorWeekAvg) * 100)
+      insights.push({
+        id: 'sales_anomaly',
+        severity: 'warning',
+        message: `This week's revenue is ${dropPct}% below your 3-week average — check for unusual patterns`,
+        href: '/reports',
+      })
+    }
+  } catch {}
+
+  // Warnings first, max 6
+  return insights
+    .sort((a, b) => (a.severity === 'warning' ? -1 : 1) - (b.severity === 'warning' ? -1 : 1))
+    .slice(0, 6)
+}
