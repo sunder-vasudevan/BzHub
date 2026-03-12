@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { fetchKPIs, fetchTrend, fetchProductVelocity } from "@/lib/db"
 import {
   DollarSign,
@@ -13,6 +14,7 @@ import {
   Users,
   TrendingUp,
   BarChart3,
+  Settings2,
 } from "lucide-react"
 import {
   LineChart,
@@ -101,11 +103,60 @@ function KPICard({ title, value, subtitle, trend, trendUp, trendHref, icon, icon
 }
 
 const PERIODS = [
-  { label: "1 Week",   days: 7 },
-  { label: "15 Days",  days: 15 },
-  { label: "1 Month",  days: 30 },
-  { label: "1 Quarter",days: 90 },
+  { label: "7 Days",   days: 7 },
+  { label: "30 Days",  days: 30 },
+  { label: "90 Days",  days: 90 },
 ]
+
+const KPI_KEYS = [
+  "today_sales",
+  "inventory_value",
+  "low_stock",
+  "avg_daily_sales",
+  "pipeline_value",
+  "growth",
+] as const
+type KPIKey = typeof KPI_KEYS[number]
+
+const KPI_LABELS: Record<KPIKey, string> = {
+  today_sales: "Today's Sales",
+  inventory_value: "Inventory Value",
+  low_stock: "Low Stock",
+  avg_daily_sales: "Avg Daily Sales",
+  pipeline_value: "Pipeline Value",
+  growth: "Growth (7d)",
+}
+
+const PREFS_KEY = "bzhub_dashboard_prefs"
+
+interface DashboardPrefs {
+  visibleKPIs: Record<KPIKey, boolean>
+  trendDays: number
+}
+
+function loadPrefs(): DashboardPrefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY)
+    if (raw) return JSON.parse(raw) as DashboardPrefs
+  } catch {}
+  return {
+    visibleKPIs: {
+      today_sales: true,
+      inventory_value: true,
+      low_stock: true,
+      avg_daily_sales: true,
+      pipeline_value: true,
+      growth: true,
+    },
+    trendDays: 30,
+  }
+}
+
+function savePrefs(prefs: DashboardPrefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs))
+  } catch {}
+}
 
 function compactINR(n: number): string {
   if (n >= 1e7) return `${(n / 1e7).toFixed(2)} Cr`
@@ -120,10 +171,42 @@ export default function DashboardPage() {
   const [velocity, setVelocity] = useState<{ fast: VelocityItem[]; slow: VelocityItem[] }>({ fast: [], slow: [] })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
-  const [trendDays, setTrendDays] = useState(14)
+  const [trendDays, setTrendDays] = useState(30)
   const [customDays, setCustomDays] = useState("")
   const [trendLoading, setTrendLoading] = useState(false)
   const currency = useCurrency()
+
+  // Dashboard customization
+  const [prefs, setPrefs] = useState<DashboardPrefs>(() => loadPrefs())
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const customizeRef = useRef<HTMLDivElement>(null)
+
+  // Sync trendDays from prefs on mount
+  useEffect(() => {
+    const saved = loadPrefs()
+    setPrefs(saved)
+    setTrendDays(saved.trendDays)
+  }, [])
+
+  // Close customize dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (customizeRef.current && !customizeRef.current.contains(e.target as Node)) {
+        setCustomizeOpen(false)
+      }
+    }
+    if (customizeOpen) document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [customizeOpen])
+
+  function toggleKPI(key: KPIKey) {
+    const updated = {
+      ...prefs,
+      visibleKPIs: { ...prefs.visibleKPIs, [key]: !prefs.visibleKPIs[key] },
+    }
+    setPrefs(updated)
+    savePrefs(updated)
+  }
 
   useEffect(() => {
     Promise.all([
@@ -144,6 +227,9 @@ export default function DashboardPage() {
       .then(setTrend)
       .catch(() => {})
       .finally(() => setTrendLoading(false))
+    const updated = { ...prefs, trendDays: days }
+    setPrefs(updated)
+    savePrefs(updated)
   }
 
   function handleMonthSelect(value: string) {
@@ -179,11 +265,42 @@ export default function DashboardPage() {
   return (
     <AppLayout activePage="dashboard">
       <div className="px-4 py-4 md:px-6 md:py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Real-time overview of your business
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
+              Real-time overview of your business
+            </p>
+          </div>
+          {/* Customize button */}
+          <div className="relative" ref={customizeRef}>
+            <Button variant="outline" size="sm" onClick={() => setCustomizeOpen(!customizeOpen)}>
+              <Settings2 className="h-4 w-4 mr-2" />
+              Customize
+            </Button>
+            {customizeOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-border rounded-xl shadow-xl z-30 overflow-hidden">
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Show / Hide Cards</p>
+                </div>
+                <ul className="py-1">
+                  {KPI_KEYS.map(key => (
+                    <li key={key}>
+                      <label className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          checked={prefs.visibleKPIs[key]}
+                          onChange={() => toggleKPI(key)}
+                          className="rounded"
+                        />
+                        {KPI_LABELS[key]}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -206,52 +323,64 @@ export default function DashboardPage() {
           <>
             {/* KPI Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-              <KPICard
-                title="Today's Sales"
-                value={`${currency}${kpis.today_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-                icon={<DollarSign className="h-4 w-4" />}
-                iconBg="#6D28D9"
-                trend="Revenue today"
-              />
-              <KPICard
-                title="Inventory Value"
-                value={`${currency}${compactINR(kpis.inventory_value)}`}
-                subtitle={`${kpis.total_items} items`}
-                icon={<Package className="h-4 w-4" />}
-                iconBg="#0EA5E9"
-              />
-              <KPICard
-                title="Low Stock"
-                value={String(kpis.low_stock_count)}
-                subtitle="items below threshold"
-                trend={kpis.low_stock_count > 0 ? "Needs attention" : "All stocked"}
-                trendUp={kpis.low_stock_count === 0}
-                trendHref={kpis.low_stock_count > 0 ? "/operations?filter=lowstock" : undefined}
-                icon={<AlertTriangle className="h-4 w-4" />}
-                iconBg={kpis.low_stock_count > 0 ? "#EF4444" : "#10B981"}
-              />
-              <KPICard
-                title="Pipeline Value"
-                value={`${currency}${kpis.pipeline_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-                subtitle={`${kpis.conversion_rate}% conversion`}
-                icon={<Users className="h-4 w-4" />}
-                iconBg="#8B5CF6"
-              />
-              <KPICard
-                title="Avg Daily Sales"
-                value={`${currency}${kpis.avg_daily_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-                subtitle="14-day average"
-                icon={<BarChart3 className="h-4 w-4" />}
-                iconBg="#F59E0B"
-              />
-              <KPICard
-                title="Growth (7d)"
-                value={`${kpis.growth_pct >= 0 ? "+" : ""}${kpis.growth_pct}%`}
-                trend={kpis.growth_pct >= 0 ? "Up from last week" : "Down from last week"}
-                trendUp={kpis.growth_pct >= 0}
-                icon={<TrendingUp className="h-4 w-4" />}
-                iconBg={kpis.growth_pct >= 0 ? "#10B981" : "#EF4444"}
-              />
+              {prefs.visibleKPIs.today_sales && (
+                <KPICard
+                  title="Today's Sales"
+                  value={`${currency}${kpis.today_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                  icon={<DollarSign className="h-4 w-4" />}
+                  iconBg="#6D28D9"
+                  trend="Revenue today"
+                />
+              )}
+              {prefs.visibleKPIs.inventory_value && (
+                <KPICard
+                  title="Inventory Value"
+                  value={`${currency}${compactINR(kpis.inventory_value)}`}
+                  subtitle={`${kpis.total_items} items`}
+                  icon={<Package className="h-4 w-4" />}
+                  iconBg="#0EA5E9"
+                />
+              )}
+              {prefs.visibleKPIs.low_stock && (
+                <KPICard
+                  title="Low Stock"
+                  value={String(kpis.low_stock_count)}
+                  subtitle="items below threshold"
+                  trend={kpis.low_stock_count > 0 ? "Needs attention" : "All stocked"}
+                  trendUp={kpis.low_stock_count === 0}
+                  trendHref={kpis.low_stock_count > 0 ? "/operations?filter=lowstock" : undefined}
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                  iconBg={kpis.low_stock_count > 0 ? "#EF4444" : "#10B981"}
+                />
+              )}
+              {prefs.visibleKPIs.pipeline_value && (
+                <KPICard
+                  title="Pipeline Value"
+                  value={`${currency}${kpis.pipeline_value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                  subtitle={`${kpis.conversion_rate}% conversion`}
+                  icon={<Users className="h-4 w-4" />}
+                  iconBg="#8B5CF6"
+                />
+              )}
+              {prefs.visibleKPIs.avg_daily_sales && (
+                <KPICard
+                  title="Avg Daily Sales"
+                  value={`${currency}${kpis.avg_daily_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                  subtitle="30-day average"
+                  icon={<BarChart3 className="h-4 w-4" />}
+                  iconBg="#F59E0B"
+                />
+              )}
+              {prefs.visibleKPIs.growth && (
+                <KPICard
+                  title="Growth (7d)"
+                  value={`${kpis.growth_pct >= 0 ? "+" : ""}${kpis.growth_pct}%`}
+                  trend={kpis.growth_pct >= 0 ? "Up from last week" : "Down from last week"}
+                  trendUp={kpis.growth_pct >= 0}
+                  icon={<TrendingUp className="h-4 w-4" />}
+                  iconBg={kpis.growth_pct >= 0 ? "#10B981" : "#EF4444"}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -324,6 +453,7 @@ export default function DashboardPage() {
                     <CardTitle className="text-base">
                       Sales Trend — Last {trendDays} Days
                     </CardTitle>
+
                     <div className="flex flex-wrap items-center gap-1.5">
                       {PERIODS.map((p) => (
                         <button

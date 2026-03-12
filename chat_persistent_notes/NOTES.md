@@ -19,13 +19,13 @@ Use this file to store anything you want me to remember between sessions and pro
 - Repo: `/Users/scottvalentino/BzHub`
 - Web app: `bzhub_web/bzhub_web/`
 
-**Current version:** v4.5.0 (2026-03-12) — live on Vercel
+**Current version:** v4.6.0 (2026-03-12) — live on Vercel
 
 **Live modules:** Dashboard, Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads, Kanban), Reports, Settings, Help, Employee Self-Service Portal
 
 **Known gap:** Login is hardcoded `admin/admin123` — no real auth yet (FEAT-036, planned Phase 3).
 
-**Next feature to build:** FEAT-021 — In-app Notification Center
+**Next feature to build:** FEAT-038 — Industry-Specific Templates
 
 ---
 
@@ -39,14 +39,14 @@ Use this file to store anything you want me to remember between sessions and pro
 ### 🔴 Phase 1 — Core Product Features
 1. ~~**FEAT-034** — Approval Workflows~~ ✅ Done (v4.4.0)
 2. ~~**FEAT-035** — Employee Self-Service Portal~~ ✅ Done (v4.5.0)
-3. **FEAT-021** — In-app Notification Center ← **START HERE NEXT SESSION**
-4. **FEAT-023** — Customizable Dashboard (drag/drop KPI cards, chart types, date ranges)
-5. **FEAT-024** — Export/Import (Excel, PDF, CSV)
-6. **FEAT-025** — Advanced Search & Filters (global search, group by, saved filters)
-7. **FEAT-026** — Audit Log (who changed what and when)
+3. ~~**FEAT-021**~~ ✅ Done v4.6.0 — In-app Notification Center
+4. ~~**FEAT-023**~~ ✅ Done v4.6.0 — Customizable Dashboard
+5. ~~**FEAT-024**~~ ✅ Done v4.6.0 — CSV Export
+6. ~~**FEAT-025**~~ ✅ Done v4.6.0 — Global Search
+7. ~~**FEAT-026**~~ ✅ Done v4.6.0 — Audit Log
 
 ### 🟠 Phase 2 — USP / Differentiation
-8. **FEAT-038** — Industry-Specific Templates (Retail, Clinic, Restaurant, Distributor — one-click setup)
+8. **FEAT-038** — Industry-Specific Templates ← **START HERE NEXT SESSION** (Retail, Clinic, Restaurant, Distributor — one-click setup)
 9. **FEAT-039** — Offline-First Mode (works without internet, syncs on reconnect)
 10. **FEAT-040** — GST / Tax Compliance India (GST invoicing, GSTR-1/3B export — compete with Tally)
 11. **FEAT-032** — AI-Powered Insights (stock forecasting, HR nudges, sales anomaly, NL queries)
@@ -67,6 +67,7 @@ Use this file to store anything you want me to remember between sessions and pro
 ---
 
 ## Completed (Recent)
+- v4.6.0 — Notification Center, Dashboard Customization, CSV Export, Global Search, Audit Log
 - v4.5.0 — Employee Self-Service Portal (My Goals, My Appraisals, My Leave, My Skills)
 - v4.4.0 — Approval Workflows (Leave Requests, Purchase Orders, Appraisal Sign-off)
 - v4.3.0 — Goals, Appraisals, Skills Matrix

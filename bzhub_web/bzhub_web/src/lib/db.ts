@@ -130,8 +130,9 @@ export async function fetchEmployees() {
 }
 
 export async function createEmployee(item: Record<string, unknown>) {
-  const { error } = await supabase.from('employees').insert([item])
+  const { data, error } = await supabase.from('employees').insert([item]).select('id').single()
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'employees', record_id: String(data?.id ?? ''), action: 'create', summary: `Created employee: ${item.name ?? ''}` })
 }
 
 export async function updateEmployee(id: number, updates: Record<string, unknown>) {
@@ -142,6 +143,7 @@ export async function updateEmployee(id: number, updates: Record<string, unknown
 export async function deleteEmployee(id: number) {
   const { error } = await supabase.from('employees').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'employees', record_id: String(id), action: 'delete', summary: `Deleted employee id ${id}` })
 }
 
 // ---- Payroll ----
@@ -343,8 +345,9 @@ export async function createGoal(data: {
   due_date: string
   status: string
 }): Promise<void> {
-  const { error } = await supabase.from('goals').insert([data])
+  const { data: inserted, error } = await supabase.from('goals').insert([data]).select('id').single()
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'goals', record_id: String(inserted?.id ?? ''), action: 'create', summary: `Goal created: ${data.title}` })
 }
 
 export async function updateGoal(
@@ -358,6 +361,7 @@ export async function updateGoal(
 export async function deleteGoal(id: number): Promise<void> {
   const { error } = await supabase.from('goals').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'goals', record_id: String(id), action: 'delete', summary: `Deleted goal id ${id}` })
 }
 
 export async function createGoalCheckin(data: {
@@ -555,8 +559,9 @@ export async function createLeaveRequest(data: {
   end_date: string
   reason: string
 }): Promise<void> {
-  const { error } = await supabase.from('leave_requests').insert([{ ...data, status: 'Pending' }])
+  const { data: inserted, error } = await supabase.from('leave_requests').insert([{ ...data, status: 'Pending' }]).select('id').single()
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'leave_requests', record_id: String(inserted?.id ?? ''), action: 'create', summary: `Leave request: ${data.leave_type} for employee ${data.employee_id}` })
 }
 
 export async function updateLeaveRequestStatus(
@@ -569,11 +574,13 @@ export async function updateLeaveRequestStatus(
     .update({ status, reviewed_by, reviewed_at: new Date().toISOString() })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'leave_requests', record_id: String(id), action: 'update', summary: `Leave request ${status.toLowerCase()} by ${reviewed_by}` })
 }
 
 export async function deleteLeaveRequest(id: number): Promise<void> {
   const { error } = await supabase.from('leave_requests').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'leave_requests', record_id: String(id), action: 'delete', summary: `Deleted leave request id ${id}` })
 }
 
 // ---- Purchase Orders ----
@@ -621,8 +628,9 @@ export async function createPurchaseOrder(data: {
   total_amount: number
   notes: string
 }): Promise<void> {
-  const { error } = await supabase.from('purchase_orders').insert([{ ...data, status: 'Pending' }])
+  const { data: inserted, error } = await supabase.from('purchase_orders').insert([{ ...data, status: 'Pending' }]).select('id').single()
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'purchase_orders', record_id: String(inserted?.id ?? ''), action: 'create', summary: `PO created: ${data.supplier_name ?? 'supplier'} amount ${data.total_amount}` })
 }
 
 export async function updatePurchaseOrderStatus(
@@ -635,11 +643,46 @@ export async function updatePurchaseOrderStatus(
     .update({ status, reviewed_by, reviewed_at: new Date().toISOString() })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'purchase_orders', record_id: String(id), action: 'update', summary: `PO status → ${status} by ${reviewed_by}` })
 }
 
 export async function deletePurchaseOrder(id: number): Promise<void> {
   const { error } = await supabase.from('purchase_orders').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  logAudit({ table_name: 'purchase_orders', record_id: String(id), action: 'delete', summary: `Deleted PO id ${id}` })
+}
+
+// ---- Audit Log ----
+
+export interface AuditLog {
+  id: number
+  table_name: string
+  record_id: string
+  action: string
+  changed_by: string
+  summary: string
+  created_at: string
+}
+
+export async function logAudit(data: {
+  table_name: string
+  record_id: string
+  action: 'create' | 'update' | 'delete'
+  changed_by?: string
+  summary?: string
+}): Promise<void> {
+  // fire-and-forget — never throw, audit failures shouldn't block UX
+  supabase.from('audit_logs').insert([{ ...data, changed_by: data.changed_by ?? 'admin' }]).then(() => {})
+}
+
+export async function fetchAuditLogs(limit = 100): Promise<AuditLog[]> {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
 // ---- Auth (simple hardcoded for now — replace with Supabase Auth later) ----

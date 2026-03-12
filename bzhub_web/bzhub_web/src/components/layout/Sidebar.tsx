@@ -14,6 +14,7 @@ import {
   BarChart3,
   HelpCircle,
   UserCheck,
+  ClipboardCheck,
 } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/hr", label: "HR", key: "hr", icon: Users },
   { href: "/reports", label: "Reports", key: "reports", icon: BarChart3 },
   { href: "/employee-portal", label: "My Portal", key: "employee-portal", icon: UserCheck },
+  { href: "/audit-log", label: "Audit Log", key: "audit-log", icon: ClipboardCheck },
   { href: "/settings", label: "Settings", key: "settings", icon: Settings },
   { href: "/help", label: "Help", key: "help", icon: HelpCircle },
 ]

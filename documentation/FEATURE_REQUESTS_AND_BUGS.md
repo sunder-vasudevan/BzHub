@@ -71,7 +71,7 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Owner:** Unassigned
 
 ### FEAT-021 — Notification Center
-- **Status:** Open
+- **Status:** Done v4.6.0
 - **Priority:** Medium
 - **Target Phase:** UI/Product
 - **Summary:** In-app notifications for important events (e.g., sales targets, low inventory, new messages).
@@ -83,25 +83,25 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Summary:** Multi-user support with role-based access control for different modules.
 
 ### FEAT-023 — Customizable Dashboard
-- **Status:** Open
+- **Status:** Done v4.6.0
 - **Priority:** Medium
 - **Target Phase:** UI/Product
 - **Summary:** Allow users to personalize dashboard widgets and analytics cards.
 
 ### FEAT-024 — Export/Import Data
-- **Status:** Open
+- **Status:** Done v4.6.0
 - **Priority:** Medium
 - **Target Phase:** Product Features
 - **Summary:** Enable exporting reports to Excel/PDF and importing data from CSV.
 
 ### FEAT-025 — Advanced Search & Filters
-- **Status:** Open
+- **Status:** Done v4.6.0
 - **Priority:** Medium
 - **Target Phase:** UI/Product
 - **Summary:** Add global search and advanced filtering for transactions, inventory, and contacts.
 
 ### FEAT-026 — Audit Log
-- **Status:** Open
+- **Status:** Done v4.6.0
 - **Priority:** Medium
 - **Target Phase:** Security/Product
 - **Summary:** Track user actions and changes for security and compliance.

@@ -68,7 +68,9 @@ import {
   ClipboardList,
   Check,
   X,
+  Download,
 } from "lucide-react"
+import { downloadCSV } from "@/lib/export"
 
 type Tab = "inventory" | "pos" | "bills" | "suppliers" | "purchase_orders"
 type SortDir = "asc" | "desc" | "none"
@@ -359,6 +361,21 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
             className="pl-9"
           />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => downloadCSV("inventory.csv", filtered.map(i => ({
+            item_name: i.item_name,
+            description: i.description,
+            quantity: i.quantity,
+            threshold: i.threshold,
+            cost_price: i.cost_price,
+            sale_price: i.sale_price,
+            status: stockStatus(i).label,
+          })))}
+        >
+          <Download className="h-4 w-4 mr-1" /> Export CSV
+        </Button>
         <Button onClick={() => setShowAdd(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Add Item
         </Button>

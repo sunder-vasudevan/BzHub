@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import AppLayout from "@/components/layout/AppLayout"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Table,
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui/table"
 import { fetchSales, fetchInventory } from "@/lib/db"
 import { useCurrency } from "@/hooks/useCurrency"
-import { BarChart3, TrendingUp, Package } from "lucide-react"
+import { BarChart3, TrendingUp, Package, FlaskConical, Download } from "lucide-react"
+import { downloadCSV } from "@/lib/export"
 import {
   BarChart,
   Bar,
@@ -24,7 +26,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 
-type Tab = "sales" | "topsellers" | "inventory"
+type Tab = "sales" | "topsellers" | "inventory" | "forecast"
 
 // ---- Types ----
 interface SaleRow {
@@ -107,22 +109,38 @@ function SalesReportTab() {
       )}
 
       {!loading && summary.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">Total Revenue</p>
-            <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>
-              {currency}{totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </p>
+        <>
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadCSV("sales-report.csv", summary.map(r => ({
+                month: r.month,
+                revenue: r.revenue,
+                num_sales: r.numSales,
+                avg_order_value: r.avgOrder,
+              })))}
+            >
+              <Download className="h-4 w-4 mr-1" /> Export CSV
+            </Button>
           </div>
-          <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">Total Transactions</p>
-            <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{totalSales}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Total Revenue</p>
+              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>
+                {currency}{totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Total Transactions</p>
+              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{totalSales}</p>
+            </div>
+            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Months on Record</p>
+              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{summary.length}</p>
+            </div>
           </div>
-          <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">Months on Record</p>
-            <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{summary.length}</p>
-          </div>
-        </div>
+        </>
       )}
 
       {loading ? (
@@ -219,7 +237,19 @@ function TopSellersTab() {
         <p className="text-muted-foreground text-sm italic py-8 text-center">No sales data available.</p>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">Top 10 products by total quantity sold (all time)</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Top 10 products by total quantity sold (all time)</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadCSV("top-sellers.csv", data.map(r => ({
+                item_name: r.item_name,
+                qty_sold: r.qty_sold,
+              })))}
+            >
+              <Download className="h-4 w-4 mr-1" /> Export CSV
+            </Button>
+          </div>
           <ResponsiveContainer width="100%" height={360}>
             <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 80 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -302,22 +332,41 @@ function InventoryReportTab() {
       )}
 
       {!loading && items.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">Total Items</p>
-            <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{items.length}</p>
+        <>
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadCSV("inventory-report.csv", items.map(i => ({
+                item_name: i.item_name,
+                description: i.description ?? "",
+                quantity: i.quantity,
+                cost_price: i.cost_price,
+                sale_price: i.sale_price,
+                total_value: ((i.quantity ?? 0) * (i.sale_price ?? 0)).toFixed(2),
+                status: (i.quantity ?? 0) < 10 ? "Low Stock" : "OK",
+              })))}
+            >
+              <Download className="h-4 w-4 mr-1" /> Export CSV
+            </Button>
           </div>
-          <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">Total Inventory Value</p>
-            <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>
-              {currency}{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Total Items</p>
+              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{items.length}</p>
+            </div>
+            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Total Inventory Value</p>
+              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>
+                {currency}{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Low Stock Items</p>
+              <p className="text-xl font-bold text-red-600">{lowStockCount}</p>
+            </div>
           </div>
-          <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">Low Stock Items</p>
-            <p className="text-xl font-bold text-red-600">{lowStockCount}</p>
-          </div>
-        </div>
+        </>
       )}
 
       {loading ? (
@@ -386,6 +435,187 @@ function InventoryReportTab() {
   )
 }
 
+// ---- Forecast Tab ----
+interface ForecastRow {
+  item_name: string
+  current_stock: number
+  avg_daily_sales: number
+  days_remaining: number | null
+  status: "Critical" | "Warning" | "Safe" | "No Data"
+}
+
+function ForecastTab() {
+  const [rows, setRows] = useState<ForecastRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [sortBy, setSortBy] = useState<"days" | "stock" | "velocity">("days")
+
+  const load = useCallback(async () => {
+    try {
+      setError("")
+      const [inventory, sales] = await Promise.all([fetchInventory(), fetchSales()])
+
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+      const recentSales = (sales as SaleRow[]).filter((s) => (s.sale_date ?? "") >= cutoff)
+
+      // Sum qty sold per item over last 30 days
+      const velocityMap: Record<string, number> = {}
+      for (const s of recentSales) {
+        velocityMap[s.item_name] = (velocityMap[s.item_name] ?? 0) + (s.quantity ?? 0)
+      }
+
+      const result: ForecastRow[] = (inventory as InventoryRow[]).map((item) => {
+        const totalQty = velocityMap[item.item_name] ?? 0
+        const avgDaily = Math.round((totalQty / 30) * 100) / 100
+        const daysRemaining = avgDaily > 0 ? Math.round(item.quantity / avgDaily) : null
+        let status: ForecastRow["status"] = "No Data"
+        if (daysRemaining !== null) {
+          status = daysRemaining < 7 ? "Critical" : daysRemaining < 30 ? "Warning" : "Safe"
+        }
+        return {
+          item_name: item.item_name,
+          current_stock: item.quantity,
+          avg_daily_sales: avgDaily,
+          days_remaining: daysRemaining,
+          status,
+        }
+      })
+
+      setRows(result)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load forecast")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const sorted = [...rows].sort((a, b) => {
+    if (sortBy === "days") {
+      if (a.days_remaining === null && b.days_remaining === null) return 0
+      if (a.days_remaining === null) return 1
+      if (b.days_remaining === null) return -1
+      return a.days_remaining - b.days_remaining
+    }
+    if (sortBy === "stock") return a.current_stock - b.current_stock
+    return b.avg_daily_sales - a.avg_daily_sales
+  })
+
+  const critical = rows.filter((r) => r.status === "Critical").length
+  const warning = rows.filter((r) => r.status === "Warning").length
+  const safe = rows.filter((r) => r.status === "Safe").length
+
+  const statusBadge = (status: ForecastRow["status"]) => {
+    const styles: Record<ForecastRow["status"], string> = {
+      Critical: "bg-red-100 text-red-700",
+      Warning: "bg-amber-100 text-amber-700",
+      Safe: "bg-emerald-100 text-emerald-700",
+      "No Data": "bg-gray-100 text-gray-500",
+    }
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${styles[status]}`}>
+        {status}
+      </span>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && (
+        <>
+          <p className="text-sm text-muted-foreground">
+            Based on sales velocity over the last 30 days. Items with no recent sales are marked as &quot;No Data&quot;.
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Critical (&lt;7 days)</p>
+              <p className="text-2xl font-bold text-red-600">{critical}</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Warning (7–30 days)</p>
+              <p className="text-2xl font-bold text-amber-600">{warning}</p>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">Safe (&gt;30 days)</p>
+              <p className="text-2xl font-bold text-emerald-600">{safe}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Sort by:</span>
+            {(["days", "stock", "velocity"] as const).map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setSortBy(opt)}
+                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                  sortBy === opt
+                    ? "text-white border-transparent"
+                    : "text-muted-foreground border-border hover:border-foreground"
+                }`}
+                style={sortBy === opt ? { backgroundColor: "#6D28D9" } : undefined}
+              >
+                {opt === "days" ? "Days Remaining" : opt === "stock" ? "Stock Level" : "Sales Velocity"}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div
+            className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead className="text-right">Stock Qty</TableHead>
+                <TableHead className="text-right">Avg Daily Sales</TableHead>
+                <TableHead className="text-right">Days Until Stockout</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sorted.map((row) => (
+                <TableRow key={row.item_name}>
+                  <TableCell className="font-medium">{row.item_name}</TableCell>
+                  <TableCell className="text-right">{row.current_stock}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {row.avg_daily_sales > 0 ? row.avg_daily_sales.toFixed(2) : "—"}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {row.days_remaining !== null ? `~${row.days_remaining} days` : "—"}
+                  </TableCell>
+                  <TableCell>{statusBadge(row.status)}</TableCell>
+                </TableRow>
+              ))}
+              {rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground italic py-8">
+                    No inventory data found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- Main Page ----
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("sales")
@@ -394,6 +624,7 @@ export default function ReportsPage() {
     { key: "sales", label: "Sales Report", icon: <TrendingUp className="h-4 w-4" /> },
     { key: "topsellers", label: "Top Sellers", icon: <BarChart3 className="h-4 w-4" /> },
     { key: "inventory", label: "Inventory Report", icon: <Package className="h-4 w-4" /> },
+    { key: "forecast", label: "Stock Forecast", icon: <FlaskConical className="h-4 w-4" /> },
   ]
 
   return (
@@ -427,6 +658,7 @@ export default function ReportsPage() {
             {activeTab === "sales" && <SalesReportTab />}
             {activeTab === "topsellers" && <TopSellersTab />}
             {activeTab === "inventory" && <InventoryReportTab />}
+            {activeTab === "forecast" && <ForecastTab />}
           </CardContent>
         </Card>
       </div>

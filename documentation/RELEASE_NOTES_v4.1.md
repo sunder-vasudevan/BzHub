@@ -1,5 +1,26 @@
 # BzHub v4.1.0 — Release Notes
 
+## v4.6.0 — Notification Center, Dashboard Customization, CSV Export, Global Search, Audit Log
+**Date:** 2026-03-12
+
+### New Features
+- **FEAT-021** — In-app Notification Center (bell icon, derives from existing data)
+- **FEAT-023** — Customizable Dashboard (KPI card toggle, localStorage prefs)
+- **FEAT-024** — CSV Export (Inventory, Employees, Reports tabs)
+- **FEAT-025** — Global Search (Cmd+K modal, searches inventory/employees/contacts/leads)
+- **FEAT-026** — Audit Log (/audit-log page, audit_logs Supabase table)
+
+### Database
+- New table: audit_logs (run documentation/supabase_schema_v3.sql)
+
+### Files Changed
+- src/lib/notifications.ts, src/lib/export.ts, src/components/GlobalSearch.tsx
+- src/app/audit-log/page.tsx, src/components/layout/AppLayout.tsx
+- src/components/layout/Sidebar.tsx, src/app/dashboard/page.tsx
+- src/app/operations/page.tsx, src/app/hr/page.tsx, src/app/reports/page.tsx
+- src/lib/db.ts, src/app/help/page.tsx, documentation/supabase_schema_v3.sql
+
+
 ## v4.5.0 — Employee Self-Service Portal
 **Date:** 2026-03-12
 

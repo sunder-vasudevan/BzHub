@@ -27,6 +27,11 @@ import {
   ClipboardList,
   CheckCircle2,
   UserCheck,
+  Bell,
+  Settings2,
+  Download,
+  Search,
+  ClipboardCheck,
 } from "lucide-react"
 
 interface Section {
@@ -350,6 +355,114 @@ const sections: Section[] = [
       },
     ],
   },
+  {
+    id: "notification-center",
+    icon: <Bell className="h-5 w-5" />,
+    title: "Notification Center",
+    badge: "New",
+    content: [
+      {
+        heading: "Bell Icon",
+        text: "Click the bell icon in the top-right bar (desktop) or the mobile header to open your notification panel. A red badge shows the count of active notifications.",
+      },
+      {
+        heading: "What Triggers Notifications",
+        text: "BzHub automatically surfaces: pending leave requests, pending purchase orders awaiting approval, appraisals that need sign-off, and inventory items that have fallen below their stock threshold.",
+      },
+      {
+        heading: "Navigating from a Notification",
+        text: "Click any notification to jump directly to the relevant module. The panel closes automatically after you click.",
+      },
+    ],
+  },
+  {
+    id: "dashboard-customization",
+    icon: <Settings2 className="h-5 w-5" />,
+    title: "Dashboard Customization",
+    badge: "New",
+    content: [
+      {
+        heading: "Customize Button",
+        text: "Click the 'Customize' button (gear icon) in the top-right of the Dashboard header to open the customization panel.",
+      },
+      {
+        heading: "Show / Hide KPI Cards",
+        text: "Toggle the checkboxes next to each card name (Today's Sales, Inventory Value, Low Stock, Avg Daily Sales, Pipeline Value, Growth) to show or hide them. Your preferences are saved automatically.",
+      },
+      {
+        heading: "Saved Preferences",
+        text: "Your dashboard layout is saved to your browser's local storage under the key 'bzhub_dashboard_prefs'. It persists across page refreshes.",
+      },
+    ],
+  },
+  {
+    id: "csv-export",
+    icon: <Download className="h-5 w-5" />,
+    title: "CSV Export",
+    badge: "New",
+    content: [
+      {
+        heading: "Export Inventory",
+        text: "In Operations → Inventory tab, click 'Export CSV' to download the current visible inventory table including item name, quantity, prices and stock status.",
+      },
+      {
+        heading: "Export Employees",
+        text: "In HR → Employees tab, click 'Export CSV' to download a spreadsheet of all employees with their name, designation, team, email and phone.",
+      },
+      {
+        heading: "Export Reports",
+        text: "In the Reports page, each tab (Sales Report, Top Sellers, Inventory Report) has an 'Export CSV' button that downloads the data currently shown in that tab.",
+      },
+    ],
+  },
+  {
+    id: "global-search",
+    icon: <Search className="h-5 w-5" />,
+    title: "Global Search",
+    badge: "New",
+    content: [
+      {
+        heading: "Opening the Search",
+        text: "Press Cmd+K (Mac) or Ctrl+K (Windows/Linux) from any page to open the global search modal. You can also click the 'Search…' button in the top bar on desktop.",
+      },
+      {
+        heading: "What It Searches",
+        text: "The search queries four data sources simultaneously: Inventory (by item name), Employees (by name), CRM Contacts (by name), and CRM Leads (by title or company).",
+      },
+      {
+        heading: "Using Results",
+        text: "Results are grouped by category with colour-coded labels. Click any result to navigate directly to the relevant module page. The modal closes automatically.",
+      },
+      {
+        heading: "Keyboard Navigation",
+        text: "Press Escape to close the search modal at any time.",
+      },
+    ],
+  },
+  {
+    id: "audit-log",
+    icon: <ClipboardCheck className="h-5 w-5" />,
+    title: "Audit Log",
+    badge: "New",
+    content: [
+      {
+        heading: "What is Logged",
+        text: "BzHub automatically records create, update, and delete actions for: Employees, Leave Requests, Purchase Orders, and Goals. Each entry includes the table, record ID, action type, summary, and timestamp.",
+      },
+      {
+        heading: "Viewing the Audit Log",
+        text: "Go to 'Audit Log' in the sidebar (ClipboardCheck icon). The table shows the most recent 200 entries in reverse chronological order.",
+      },
+      {
+        heading: "Filtering",
+        text: "Filter by action type (Create / Update / Delete) or by module (table name) using the dropdowns at the top. Click 'Clear filters' to reset.",
+      },
+      {
+        heading: "Database Setup",
+        text: "The audit log requires the audit_logs table in Supabase. Run the SQL in documentation/supabase_schema_v3.sql to create it.",
+      },
+    ],
+  },
 ]
 
 function SectionCard({ section }: { section: Section }) {
@@ -411,7 +524,7 @@ export default function HelpPage() {
 
         {/* Quick nav badges */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {["Dashboard", "Operations", "CRM", "HR", "Reports", "Settings"].map((label) => (
+          {["Dashboard", "Operations", "CRM", "HR", "Reports", "Settings", "New in v4.6"].map((label) => (
             <Badge key={label} variant="outline" className="cursor-default">{label}</Badge>
           ))}
         </div>
@@ -424,7 +537,7 @@ export default function HelpPage() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-8">
-          BzHub v4.2 · For support, contact your system administrator
+          BzHub v4.6 · For support, contact your system administrator
         </p>
       </div>
     </AppLayout>

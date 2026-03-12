@@ -62,7 +62,8 @@ import {
   deleteLeaveRequest,
 } from "@/lib/db"
 import type { Goal, Appraisal, Skill, EmployeeSkill, LeaveRequest } from "@/lib/db"
-import { Plus, Users, DollarSign, Target, Star, Zap, CalendarDays, Check, X } from "lucide-react"
+import { Plus, Users, DollarSign, Target, Star, Zap, CalendarDays, Check, X, Download } from "lucide-react"
+import { downloadCSV } from "@/lib/export"
 
 type Tab = "employees" | "payroll" | "goals" | "appraisals" | "skills" | "leave"
 
@@ -218,9 +219,27 @@ function EmployeesTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{employees.length} employees</p>
-        <Button onClick={() => setShowAdd(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Add Employee
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCSV("employees.csv", employees.map(e => ({
+              id: e.id,
+              emp_number: e.emp_number ?? "",
+              name: e.name,
+              designation: e.designation ?? "",
+              team: e.team ?? "",
+              email: e.email ?? "",
+              phone: e.phone ?? "",
+              is_active: e.is_active ? "Yes" : "No",
+            })))}
+          >
+            <Download className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+          <Button onClick={() => setShowAdd(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Add Employee
+          </Button>
+        </div>
       </div>
 
       {error && <ErrorBox msg={error} />}
