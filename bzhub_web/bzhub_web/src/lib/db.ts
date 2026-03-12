@@ -508,6 +508,140 @@ export async function deleteEmployeeSkill(id: number): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+// ---- Leave Requests ----
+
+export interface LeaveRequest {
+  id: number
+  employee_id: number
+  employee_name?: string
+  leave_type: string
+  start_date: string
+  end_date: string
+  reason?: string
+  status: string
+  reviewed_by?: string
+  reviewed_at?: string
+  created_at?: string
+}
+
+export async function fetchLeaveRequests(): Promise<LeaveRequest[]> {
+  const { data, error } = await supabase
+    .from('leave_requests')
+    .select('*, employees(name)')
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const emp = row.employees as { name?: string } | null
+    return {
+      id: row.id as number,
+      employee_id: row.employee_id as number,
+      employee_name: emp?.name,
+      leave_type: (row.leave_type as string) ?? 'Annual',
+      start_date: row.start_date as string,
+      end_date: row.end_date as string,
+      reason: row.reason as string | undefined,
+      status: (row.status as string) ?? 'Pending',
+      reviewed_by: row.reviewed_by as string | undefined,
+      reviewed_at: row.reviewed_at as string | undefined,
+      created_at: row.created_at as string | undefined,
+    }
+  })
+}
+
+export async function createLeaveRequest(data: {
+  employee_id: number
+  leave_type: string
+  start_date: string
+  end_date: string
+  reason: string
+}): Promise<void> {
+  const { error } = await supabase.from('leave_requests').insert([{ ...data, status: 'Pending' }])
+  if (error) throw new Error(error.message)
+}
+
+export async function updateLeaveRequestStatus(
+  id: number,
+  status: 'Approved' | 'Rejected',
+  reviewed_by = 'Manager'
+): Promise<void> {
+  const { error } = await supabase
+    .from('leave_requests')
+    .update({ status, reviewed_by, reviewed_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteLeaveRequest(id: number): Promise<void> {
+  const { error } = await supabase.from('leave_requests').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+// ---- Purchase Orders ----
+
+export interface PurchaseOrder {
+  id: number
+  supplier_id?: number
+  supplier_name?: string
+  order_date?: string
+  expected_delivery?: string
+  total_amount: number
+  notes?: string
+  status: string
+  reviewed_by?: string
+  reviewed_at?: string
+  created_at?: string
+}
+
+export async function fetchPurchaseOrders(): Promise<PurchaseOrder[]> {
+  const { data, error } = await supabase
+    .from('purchase_orders')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as number,
+    supplier_id: row.supplier_id as number | undefined,
+    supplier_name: row.supplier_name as string | undefined,
+    order_date: row.order_date as string | undefined,
+    expected_delivery: row.expected_delivery as string | undefined,
+    total_amount: (row.total_amount as number) ?? 0,
+    notes: row.notes as string | undefined,
+    status: (row.status as string) ?? 'Pending',
+    reviewed_by: row.reviewed_by as string | undefined,
+    reviewed_at: row.reviewed_at as string | undefined,
+    created_at: row.created_at as string | undefined,
+  }))
+}
+
+export async function createPurchaseOrder(data: {
+  supplier_id?: number
+  supplier_name?: string
+  order_date: string
+  expected_delivery: string
+  total_amount: number
+  notes: string
+}): Promise<void> {
+  const { error } = await supabase.from('purchase_orders').insert([{ ...data, status: 'Pending' }])
+  if (error) throw new Error(error.message)
+}
+
+export async function updatePurchaseOrderStatus(
+  id: number,
+  status: 'Approved' | 'Rejected' | 'Ordered' | 'Delivered',
+  reviewed_by = 'Manager'
+): Promise<void> {
+  const { error } = await supabase
+    .from('purchase_orders')
+    .update({ status, reviewed_by, reviewed_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deletePurchaseOrder(id: number): Promise<void> {
+  const { error } = await supabase.from('purchase_orders').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ---- Auth (simple hardcoded for now — replace with Supabase Auth later) ----
 
 export async function login(username: string, password: string) {

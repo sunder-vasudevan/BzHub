@@ -8,6 +8,14 @@ import { useCurrency } from "@/hooks/useCurrency"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Card,
   CardContent,
@@ -40,7 +48,12 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
+  fetchPurchaseOrders,
+  createPurchaseOrder,
+  updatePurchaseOrderStatus,
+  deletePurchaseOrder,
 } from "@/lib/db"
+import type { PurchaseOrder } from "@/lib/db"
 import {
   Plus,
   Search,
@@ -52,9 +65,12 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Truck,
+  ClipboardList,
+  Check,
+  X,
 } from "lucide-react"
 
-type Tab = "inventory" | "pos" | "bills" | "suppliers"
+type Tab = "inventory" | "pos" | "bills" | "suppliers" | "purchase_orders"
 type SortDir = "asc" | "desc" | "none"
 
 interface InventoryItem {
@@ -921,6 +937,248 @@ function SuppliersTab() {
   )
 }
 
+// ---- Purchase Orders Tab ----
+function PurchaseOrdersTab() {
+  const currency = useCurrency()
+  const [orders, setOrders] = useState<PurchaseOrder[]>([])
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [showAdd, setShowAdd] = useState(false)
+  const [addSupplierId, setAddSupplierId] = useState("")
+
+  const load = useCallback(async () => {
+    try {
+      setError("")
+      const [ordersData, suppliersData] = await Promise.all([fetchPurchaseOrders(), fetchSuppliers()])
+      setOrders(Array.isArray(ordersData) ? ordersData : [])
+      setSuppliers(Array.isArray(suppliersData) ? suppliersData : [])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load purchase orders")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const selectedSupplier = suppliers.find((s) => String(s.id) === addSupplierId)
+    try {
+      await createPurchaseOrder({
+        supplier_id: addSupplierId ? Number(addSupplierId) : undefined,
+        supplier_name: selectedSupplier?.name ?? "",
+        order_date: fd.get("order_date") as string,
+        expected_delivery: fd.get("expected_delivery") as string,
+        total_amount: Number(fd.get("total_amount") ?? 0),
+        notes: fd.get("notes") as string,
+      })
+      setShowAdd(false)
+      setAddSupplierId("")
+      await load()
+      toast("Purchase order created", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Failed to create order", "error")
+    }
+  }
+
+  async function handleStatusChange(
+    id: number,
+    status: "Approved" | "Rejected" | "Ordered" | "Delivered"
+  ) {
+    try {
+      await updatePurchaseOrderStatus(id, status)
+      await load()
+      toast(`Order ${status.toLowerCase()}`, "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Failed", "error")
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this purchase order?")) return
+    try {
+      await deletePurchaseOrder(id)
+      await load()
+      toast("Deleted", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Delete failed", "error")
+    }
+  }
+
+  function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+    if (status === "Approved" || status === "Delivered") return "default"
+    if (status === "Rejected") return "destructive"
+    if (status === "Ordered") return "secondary"
+    return "outline"
+  }
+
+  const pending = orders.filter((o) => o.status === "Pending").length
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {orders.length} orders{pending > 0 && <span className="ml-2 text-orange-600 font-medium">({pending} pending approval)</span>}
+        </p>
+        <Button onClick={() => setShowAdd(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" /> New PO
+        </Button>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      <Dialog open={showAdd} onOpenChange={(open) => { setShowAdd(open); if (!open) setAddSupplierId("") }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Purchase Order</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-1.5">
+                <Label>Supplier</Label>
+                <Select value={addSupplierId} onValueChange={setAddSupplierId}>
+                  <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="order_date">Order Date *</Label>
+                  <Input name="order_date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="expected_delivery">Expected Delivery</Label>
+                  <Input name="expected_delivery" type="date" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="total_amount">Total Amount *</Label>
+                <Input name="total_amount" type="number" step="0.01" min="0" required placeholder="0.00" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">Items / Notes</Label>
+                <Input name="notes" placeholder="e.g. 50x USB cables, 20x monitors..." />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit">Create PO</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }} />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Supplier</TableHead>
+                <TableHead>Order Date</TableHead>
+                <TableHead>Expected Delivery</TableHead>
+                <TableHead>Items / Notes</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map((o) => (
+                <TableRow key={o.id}>
+                  <TableCell className="font-medium">{o.supplier_name || "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{o.order_date || "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{o.expected_delivery || "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">{o.notes || "—"}</TableCell>
+                  <TableCell className="text-right font-medium">{currency}{Number(o.total_amount).toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(o.status)}>{o.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 flex-wrap">
+                      {o.status === "Pending" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => handleStatusChange(o.id, "Approved")}
+                          >
+                            <Check className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                            onClick={() => handleStatusChange(o.id, "Rejected")}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Reject
+                          </Button>
+                        </>
+                      )}
+                      {o.status === "Approved" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-blue-600 hover:bg-blue-50"
+                          onClick={() => handleStatusChange(o.id, "Ordered")}
+                        >
+                          Mark Ordered
+                        </Button>
+                      )}
+                      {o.status === "Ordered" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-green-600 hover:bg-green-50"
+                          onClick={() => handleStatusChange(o.id, "Delivered")}
+                        >
+                          Mark Delivered
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive"
+                        onClick={() => handleDelete(o.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {orders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground italic py-8">
+                    No purchase orders yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- Main Page ----
 function OperationsInner() {
   const searchParams = useSearchParams()
@@ -939,6 +1197,7 @@ function OperationsInner() {
     { key: "pos", label: "POS", icon: <ShoppingCart className="h-4 w-4" /> },
     { key: "bills", label: "Bills", icon: <Receipt className="h-4 w-4" /> },
     { key: "suppliers", label: "Suppliers", icon: <Truck className="h-4 w-4" /> },
+    { key: "purchase_orders", label: "Purchase Orders", icon: <ClipboardList className="h-4 w-4" /> },
   ]
 
   return (
@@ -973,6 +1232,7 @@ function OperationsInner() {
             {activeTab === "pos" && <POSTab inventory={inventory} />}
             {activeTab === "bills" && <BillsTab />}
             {activeTab === "suppliers" && <SuppliersTab />}
+            {activeTab === "purchase_orders" && <PurchaseOrdersTab />}
           </CardContent>
         </Card>
       </div>

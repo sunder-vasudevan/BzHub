@@ -1,6 +1,52 @@
 # BzHub v4.1.0 — Release Notes
+
+## v4.4.0 — Approval Workflows
+**Date:** 2026-03-12
+
+### New Features
+- **Leave Requests** — new Leave tab in HR module
+  - Employees submit leave requests (Annual, Sick, Unpaid, Other) with date range and reason
+  - Manager approves or rejects directly from the table with one click
+  - Pending count shown in tab header
+- **Purchase Orders** — new Purchase Orders tab in Operations module
+  - Create POs linked to existing suppliers with order/delivery dates and total amount
+  - Full approval workflow: Pending → Approved → Ordered → Delivered (or Rejected)
+  - Pending approval count shown in tab header
+- **Appraisal Sign-Off** — Approve/Reject buttons added to Appraisals tab
+  - Pending and In Progress appraisals show inline Approve/Reject actions
+  - New statuses: Approved, Rejected (in addition to existing Pending/In Progress/Completed)
+
+### Database
+- New Supabase tables (run `documentation/supabase_schema_v2.sql` additions):
+  - `leave_requests` — employee leave requests with status and review tracking
+  - `purchase_orders` — POs linked to suppliers with approval workflow
+
+### Files Changed
+- `src/app/hr/page.tsx` — LeaveTab added, Appraisals sign-off buttons
+- `src/app/operations/page.tsx` — PurchaseOrdersTab added
+- `src/lib/db.ts` — LeaveRequest + PurchaseOrder types and CRUD functions
+- `src/app/help/page.tsx` — Help sections for all 3 new features
+- `documentation/supabase_schema_v2.sql` — new tables appended
+
+---
 **Date:** 2026-03-11
 **Status:** Stable — Live on Vercel + Supabase
+
+---
+
+## v4.3.0 — HR Expansion: Goals, Appraisals & Skills
+**Date:** 2026-03-11
+
+### New Features
+- **Goals & Check-ins** — set employee performance goals and log progress check-ins
+- **Appraisals** — self and manager ratings with comments, period-based review cycles
+- **Skills catalogue** — global skill library with category grouping
+- **Employee Skills** — assign skills with proficiency levels to individual employees
+
+### Database
+- Supabase schema v2 additions at `documentation/supabase_schema_v2.sql`
+  - New tables: `suppliers`, `goals`, `goal_checkins`, `appraisals`, `skills`, `employee_skills`
+  - All tables use `bigserial primary key`, RLS enabled with open policies
 
 ---
 

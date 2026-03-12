@@ -23,6 +23,9 @@ import {
   DollarSign,
   TrendingUp,
   Building2,
+  CalendarDays,
+  ClipboardList,
+  CheckCircle2,
 } from "lucide-react"
 
 interface Section {
@@ -225,6 +228,62 @@ const sections: Section[] = [
       {
         heading: "Updating Proficiency",
         text: "Click Edit on an employee's skill card to update their proficiency level as they grow.",
+      },
+    ],
+  },
+  {
+    id: "leave-requests",
+    icon: <CalendarDays className="h-5 w-5" />,
+    title: "HR — Leave Requests",
+    badge: "HR",
+    content: [
+      {
+        heading: "Submitting a Leave Request",
+        text: "In the HR → Leave tab, click 'New Request'. Select the employee, leave type (Annual, Sick, Unpaid, Other), date range, and an optional reason. Click 'Submit Request'.",
+      },
+      {
+        heading: "Approving or Rejecting Leave",
+        text: "Pending leave requests show green Approve and red Reject buttons. Click Approve to grant the leave or Reject to decline it. The status updates immediately.",
+      },
+      {
+        heading: "Leave Types",
+        text: "Annual — planned paid leave. Sick — medical leave. Unpaid — leave without pay. Other — any other reason.",
+      },
+    ],
+  },
+  {
+    id: "purchase-orders",
+    icon: <ClipboardList className="h-5 w-5" />,
+    title: "Operations — Purchase Orders",
+    badge: "Operations",
+    content: [
+      {
+        heading: "Creating a Purchase Order",
+        text: "In Operations → Purchase Orders, click 'New PO'. Select a supplier, enter the order date, expected delivery date, total amount, and a description of items being ordered.",
+      },
+      {
+        heading: "Approval Workflow",
+        text: "New POs are created with a Pending status. A manager reviews and clicks Approve or Reject. Approved orders can then be marked as Ordered once placed with the supplier, and Delivered once received.",
+      },
+      {
+        heading: "PO Status Flow",
+        text: "Pending → Approved → Ordered → Delivered. Rejected POs are closed. You can track where each order is in the pipeline at a glance.",
+      },
+    ],
+  },
+  {
+    id: "appraisal-approval",
+    icon: <CheckCircle2 className="h-5 w-5" />,
+    title: "HR — Appraisal Sign-Off",
+    badge: "HR",
+    content: [
+      {
+        heading: "Manager Sign-Off",
+        text: "Pending and In Progress appraisals show Approve and Reject buttons directly on the appraisals list. Click Approve to formally close the appraisal cycle, or Reject to send it back.",
+      },
+      {
+        heading: "Appraisal Statuses",
+        text: "Pending → In Progress → Approved (or Rejected). Approved appraisals are locked from further editing unless changed back via the Edit dialog.",
       },
     ],
   },

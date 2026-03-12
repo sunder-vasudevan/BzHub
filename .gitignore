@@ -19,6 +19,10 @@ venv/
 *.sqlite3
 *.xlsx
 
+# Node
+node_modules/
+.next/
+
 # Separate projects (not part of BzHub)
 resume_customizer_app/
 

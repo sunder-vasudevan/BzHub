@@ -808,3 +808,148 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 - Track progress using this roadmap and update as features are completed
 
 ---
+
+## Implementation Roadmap (Updated 2026-03-12)
+
+> **Ultimate Goal:** WhatsApp-first operations + Multi-tenancy SaaS model. All features below should be built with this end-state in mind — e.g. notifications should be extensible to WhatsApp, data models should be org-aware from the start.
+
+### Priority Order
+1. FEAT-034 — Approval Workflows
+2. FEAT-035 — Employee Self-Service Portal
+3. FEAT-021 — In-app Notification Center
+4. FEAT-023 — Customizable Dashboard
+5. FEAT-024 — Export/Import (Excel/PDF/CSV)
+6. FEAT-025 — Advanced Search & Filters
+7. FEAT-026 — Audit Log
+8. FEAT-038 — Industry-Specific Templates
+9. FEAT-039 — Offline-First Mode
+10. FEAT-040 — GST / Tax Compliance (India)
+11. FEAT-036 — Supabase Auth *(enables multi-user)*
+12. FEAT-037 — Multi-Tenancy *(SaaS enabler — depends on FEAT-036)*
+13. FEAT-033 — WhatsApp / SMS *(final phase — the crown jewel)*
+
+---
+
+## USP & Differentiation Ideas (2026-03-12)
+
+### FEAT-032 — AI-Powered Insights
+- **Status:** Open
+- **Priority:** High
+- **Target Phase:** Intelligence / Product Differentiation
+- **Summary:** Embed AI-driven recommendations throughout the app to surface actionable insights automatically.
+  - Stock forecasting: "You'll run out of X in ~12 days based on current sales velocity"
+  - HR nudges: "3 employees are due for appraisal this month"
+  - Sales anomaly: "Revenue is 22% below last month's average this week"
+  - Natural language query: type "Show me sales vs last month" and get a chart
+- **Rationale:** Most SMB ERPs show raw data — none proactively tell you what to do next. This is a clear USP.
+
+---
+
+### FEAT-033 — WhatsApp / SMS Notifications
+- **Status:** Open
+- **Priority:** High
+- **Target Phase:** Integrations / Product Differentiation
+- **Summary:** Send automated alerts and business notifications via WhatsApp and/or SMS.
+  - Low stock alerts to purchase manager
+  - Pending approval reminders (purchase orders, leave requests)
+  - Goal deadline reminders to employees
+  - Invoice payment reminders to customers
+- **Implementation:** WhatsApp Business API (via Twilio or direct Meta API); SMS via Twilio/SNS.
+- **Rationale:** Most SMBs already live in WhatsApp. Meeting them there is a massive UX advantage over email-only ERPs.
+
+---
+
+### FEAT-034 — Approval Workflows
+- **Status:** Open
+- **Priority:** Medium
+- **Target Phase:** Operations
+- **Summary:** Configurable multi-step approval flows for key business actions.
+  - Purchase orders above a threshold require manager sign-off
+  - Leave requests routed to line manager
+  - Appraisals require both self-review and manager sign-off before closing
+- **Rationale:** Prevents unauthorized spend and formalizes processes that SMBs currently handle informally via WhatsApp.
+
+---
+
+### FEAT-035 — Employee Self-Service Portal
+- **Status:** Open
+- **Priority:** Medium
+- **Target Phase:** HR / Product Differentiation
+- **Summary:** Give employees their own login to view and interact with their own data.
+  - View own goals and check-ins
+  - Submit self-appraisal rating and comments
+  - View own skill profile
+  - Apply for leave
+- **Dependency:** Requires FEAT-036 (Supabase Auth) first.
+
+---
+
+### FEAT-036 — Supabase Auth (Real Login System)
+- **Status:** Open
+- **Priority:** High (blocker for multi-tenancy and self-service)
+- **Target Phase:** Security / Architecture
+- **Summary:** Replace hardcoded `admin/admin123` login with proper Supabase Auth.
+  - Email + password login via Supabase
+  - Role-based access: Admin, Manager, Employee
+  - Session management (JWT tokens, auto-refresh)
+- **Rationale:** Required before any multi-user or multi-tenant features can be built.
+
+---
+
+### FEAT-037 — Multi-Tenancy (One App, Many Organisations)
+- **Status:** Open
+- **Priority:** High — Phase 2 (after core features)
+- **Target Phase:** Architecture / Cloud
+- **Summary:** Support multiple independent organisations in a single deployment, each with isolated data and their own logins.
+- **Architecture:** Row-level multi-tenancy via Supabase RLS.
+  - Add `organization_id` column to every table
+  - RLS policies filter all queries by the authenticated user's org
+  - `organizations` table + `user_organizations` junction table with roles
+- **Onboarding flow:** Organisation signs up → gets their own org record → admin invites users → data is fully isolated from day one
+- **Dependency:** Requires FEAT-036 (Supabase Auth) first.
+- **Effort estimate:** ~3–4 days after auth is in place.
+- **Rationale:** Enables the app to be sold as a SaaS product to multiple clients with zero infrastructure overhead per client.
+- **Note:** This is the primary SaaS monetisation enabler — all data models being built now should keep `organization_id` in mind.
+
+---
+
+### FEAT-038 — Industry-Specific Templates
+- **Status:** Open
+- **Priority:** High
+- **Target Phase:** Product Differentiation / Onboarding
+- **Summary:** One-click setup for specific industries. When a new organisation is created, they choose their industry and the app pre-loads relevant defaults.
+  - **Retail** — inventory categories (clothing, electronics, etc.), POS configured, sales reports
+  - **Clinic** — patient records, appointment scheduling, billing
+  - **Restaurant** — menu items, table management, kitchen order flow
+  - **Distributor** — multi-location stock, purchase orders, route planning
+- **Implementation:** Seed scripts per industry template, applied at org creation time (ties into FEAT-037 onboarding flow).
+- **Rationale:** Odoo is too generic — industry-specific defaults reduce setup time from days to minutes. Faster time-to-value = better conversion and retention.
+
+---
+
+### FEAT-039 — Offline-First Mode
+- **Status:** Open
+- **Priority:** Medium
+- **Target Phase:** Architecture / Reliability
+- **Summary:** App remains fully functional without internet connectivity and syncs data when reconnected.
+  - Local IndexedDB or SQLite (via WASM) as offline store
+  - Background sync queue for mutations made offline
+  - Conflict resolution strategy (last-write-wins or manual merge)
+  - Visual indicator showing online/offline/syncing state
+- **Rationale:** Critical for SMBs in markets with unreliable connectivity (India, SE Asia, Africa). Competitors like Tally work offline natively — this is table stakes for that market.
+
+---
+
+### FEAT-040 — GST / Tax Compliance (India)
+- **Status:** Open
+- **Priority:** High (if targeting India)
+- **Target Phase:** Finance / Compliance
+- **Summary:** Full GST-compliant invoicing and reporting built into the app.
+  - GST invoice generation (CGST, SGST, IGST breakdown)
+  - Auto-calculate GST based on HSN/SAC codes
+  - GSTR-1 and GSTR-3B export (JSON/Excel format for filing)
+  - Tax summary reports by period
+  - Support for composition scheme and regular GST taxpayers
+- **Rationale:** Tally dominates Indian SMB accounting solely because of GST compliance. BzHub can compete directly and offer a modern cloud alternative. This is a moat in the Indian market.
+
+---

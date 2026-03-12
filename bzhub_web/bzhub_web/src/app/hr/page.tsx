@@ -56,11 +56,15 @@ import {
   fetchEmployeeSkills,
   addEmployeeSkill,
   deleteEmployeeSkill,
+  fetchLeaveRequests,
+  createLeaveRequest,
+  updateLeaveRequestStatus,
+  deleteLeaveRequest,
 } from "@/lib/db"
-import type { Goal, Appraisal, Skill, EmployeeSkill } from "@/lib/db"
-import { Plus, Users, DollarSign, Target, Star, Zap } from "lucide-react"
+import type { Goal, Appraisal, Skill, EmployeeSkill, LeaveRequest } from "@/lib/db"
+import { Plus, Users, DollarSign, Target, Star, Zap, CalendarDays, Check, X } from "lucide-react"
 
-type Tab = "employees" | "payroll" | "goals" | "appraisals" | "skills"
+type Tab = "employees" | "payroll" | "goals" | "appraisals" | "skills" | "leave"
 
 interface Employee {
   id: number
@@ -920,7 +924,7 @@ function AppraisalsTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {["Pending", "In Progress", "Completed"].map((s) => (
+                {["Pending", "In Progress", "Approved", "Rejected", "Completed"].map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
@@ -1007,7 +1011,43 @@ function AppraisalsTab() {
                     <Badge variant={appraisalStatusVariant(a.status)}>{a.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
+                      {a.status === "Pending" || a.status === "In Progress" ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={async () => {
+                              try {
+                                await updateAppraisal(a.id, { status: "Approved" })
+                                await load()
+                                toast("Appraisal approved", "success")
+                              } catch (e: unknown) {
+                                toast(e instanceof Error ? e.message : "Failed", "error")
+                              }
+                            }}
+                          >
+                            <Check className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                            onClick={async () => {
+                              try {
+                                await updateAppraisal(a.id, { status: "Rejected" })
+                                await load()
+                                toast("Appraisal rejected", "success")
+                              } catch (e: unknown) {
+                                toast(e instanceof Error ? e.message : "Failed", "error")
+                              }
+                            }}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Reject
+                          </Button>
+                        </>
+                      ) : null}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1370,6 +1410,240 @@ function SkillsTab() {
   )
 }
 
+// ---- Leave Tab ----
+function LeaveTab() {
+  const [requests, setRequests] = useState<LeaveRequest[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [showAdd, setShowAdd] = useState(false)
+  const [addEmployeeId, setAddEmployeeId] = useState("")
+  const [addLeaveType, setAddLeaveType] = useState("Annual")
+
+  const LEAVE_TYPES = ["Annual", "Sick", "Unpaid", "Other"]
+
+  const load = useCallback(async () => {
+    try {
+      setError("")
+      const [leavesData, empData] = await Promise.all([fetchLeaveRequests(), fetchEmployees()])
+      setRequests(Array.isArray(leavesData) ? leavesData : [])
+      setEmployees(Array.isArray(empData) ? empData : [])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load leave requests")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    try {
+      await createLeaveRequest({
+        employee_id: Number(addEmployeeId),
+        leave_type: addLeaveType,
+        start_date: fd.get("start_date") as string,
+        end_date: fd.get("end_date") as string,
+        reason: fd.get("reason") as string,
+      })
+      setShowAdd(false)
+      setAddEmployeeId("")
+      setAddLeaveType("Annual")
+      await load()
+      toast("Leave request submitted", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Failed to submit", "error")
+    }
+  }
+
+  async function handleApprove(id: number) {
+    try {
+      await updateLeaveRequestStatus(id, "Approved")
+      await load()
+      toast("Leave approved", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Failed", "error")
+    }
+  }
+
+  async function handleReject(id: number) {
+    try {
+      await updateLeaveRequestStatus(id, "Rejected")
+      await load()
+      toast("Leave rejected", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Failed", "error")
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this leave request?")) return
+    try {
+      await deleteLeaveRequest(id)
+      await load()
+      toast("Deleted", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Delete failed", "error")
+    }
+  }
+
+  function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+    if (status === "Approved") return "default"
+    if (status === "Rejected") return "destructive"
+    return "outline"
+  }
+
+  const pending = requests.filter((r) => r.status === "Pending").length
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {requests.length} requests{pending > 0 && <span className="ml-2 text-orange-600 font-medium">({pending} pending)</span>}
+        </p>
+        <Button onClick={() => setShowAdd(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" /> New Request
+        </Button>
+      </div>
+
+      {error && <ErrorBox msg={error} />}
+
+      <Dialog open={showAdd} onOpenChange={(open) => { setShowAdd(open); if (!open) { setAddEmployeeId(""); setAddLeaveType("Annual") } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Leave Request</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-1.5">
+                <Label>Employee *</Label>
+                <Select value={addEmployeeId} onValueChange={setAddEmployeeId} required>
+                  <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                  <SelectContent>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={String(emp.id)}>{emp.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Leave Type</Label>
+                <Select value={addLeaveType} onValueChange={setAddLeaveType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="start_date">Start Date *</Label>
+                  <Input name="start_date" type="date" required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="end_date">End Date *</Label>
+                  <Input name="end_date" type="date" required />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="reason">Reason</Label>
+                <Input name="reason" placeholder="Optional reason" />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={!addEmployeeId}>Submit Request</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {loading ? (
+        <Spinner />
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Employee</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Dates</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reviewed By</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.employee_name ?? `#${r.employee_id}`}</TableCell>
+                  <TableCell>{r.leave_type}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {r.start_date} → {r.end_date}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
+                    {r.reason || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {r.reviewed_by || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 flex-wrap">
+                      {r.status === "Pending" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => handleApprove(r.id)}
+                          >
+                            <Check className="h-3 w-3 mr-1" /> Approve
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                            onClick={() => handleReject(r.id)}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Reject
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive"
+                        onClick={() => handleDelete(r.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {requests.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground italic py-8">
+                    No leave requests found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- Main Page ----
 export default function HRPage() {
   const [activeTab, setActiveTab] = useState<Tab>("employees")
@@ -1380,6 +1654,7 @@ export default function HRPage() {
     { key: "goals", label: "Goals", icon: <Target className="h-4 w-4" /> },
     { key: "appraisals", label: "Appraisals", icon: <Star className="h-4 w-4" /> },
     { key: "skills", label: "Skills", icon: <Zap className="h-4 w-4" /> },
+    { key: "leave", label: "Leave", icon: <CalendarDays className="h-4 w-4" /> },
   ]
 
   return (
@@ -1416,6 +1691,7 @@ export default function HRPage() {
             {activeTab === "goals" && <GoalsTab />}
             {activeTab === "appraisals" && <AppraisalsTab />}
             {activeTab === "skills" && <SkillsTab />}
+            {activeTab === "leave" && <LeaveTab />}
           </CardContent>
         </Card>
       </div>
