@@ -1,5 +1,80 @@
 # BzHub v4.1.0 — Release Notes
 
+## v4.9.2 — Smart Insights Grouped by Category
+**Date:** 2026-03-12
+
+### Improvements
+- Smart Insights card now groups alerts into: **Inventory**, **HR**, **Operations**, **Sales**
+- Each group has its own icon, colour, and section header
+- No cap on total insights — all surface within their category
+- Warnings (amber dot) visually distinguished from info (grey dot) within each group
+
+### Files Changed
+- `src/lib/db.ts` — `group` field added to `Insight` interface and all `insights.push()` calls
+- `src/app/dashboard/page.tsx` — grouped grid rendering (2-column on sm+)
+
+---
+
+## v4.9.1 — CRM View Switcher (List / Kanban / Funnel)
+**Date:** 2026-03-12
+
+### New Features
+- **List view** — table with inline stage selector (default)
+- **Kanban view** — restored column board with per-column Add Lead button
+- **Funnel view** — horizontal bars per stage showing lead count + value; expandable rows; Won/Lost as outcome cards
+- View persisted to `localStorage` (`bzhub_crm_view`)
+- 3-button toggle in CRM header using List / LayoutGrid / Filter icons
+
+### Files Changed
+- `src/app/crm/page.tsx` — full rewrite with `ViewBtn`, `KanbanView`, `FunnelView` components
+
+---
+
+## v4.9.0 — CRM Table View with Inline Stage Selector
+**Date:** 2026-03-12
+
+### Changes
+- Replaced Kanban board with a table view as default CRM layout
+- Stage changes via inline `<select>` dropdown — no modal needed for quick moves
+- Stage filter pills above table
+- Pencil icon opens full edit modal
+- Add Lead button in header (stage selectable in modal)
+
+---
+
+## v4.8.0 — Smart Insights Dashboard Card
+**Date:** 2026-03-12
+
+### New Features
+- **FEAT-032a** — Smart Insights card on Dashboard (below KPI grid)
+  - Stock depletion alerts: items with <7 days (warning) or <14 days (info) of stock remaining
+  - HR nudges: pending appraisals, overdue goals
+  - Approval nudges: pending leave requests, pending purchase orders
+  - Sales anomaly: flags when this week's revenue is >20% below 3-week average
+- All computed client-side from existing Supabase data — no external AI calls
+- Collapsible card; only renders when there are insights
+- `fetchInsights()` added to `src/lib/db.ts`
+
+---
+
+## v4.7.1 — Dynamic Brand Color
+**Date:** 2026-03-12
+
+### New Features
+- Entire app color scheme changes when an industry template is selected in Settings
+- CSS custom properties `--brand-color` / `--brand-color-hover` set on `document.documentElement`
+- `initBrandColor()` called in `AppLayout` on mount for SSR-safe hydration
+- 14 files updated: all hardcoded `#6D28D9` replaced with `var(--brand-color)`
+- Defaults added to `globals.css` `:root`
+
+### Files Changed
+- `src/lib/templates.ts` — `applyTemplate()` and `initBrandColor()` set CSS vars
+- `src/app/globals.css` — `:root` defaults
+- `src/components/layout/AppLayout.tsx` — `initBrandColor()` on mount
+- 11 page/component files — hardcoded color replaced
+
+---
+
 ## v4.7.0 — Industry-Specific Templates
 **Date:** 2026-03-12
 

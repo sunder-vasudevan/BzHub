@@ -17,6 +17,7 @@ Used for the final Engineering Efficiency analysis when BzHub reaches its target
 |------|-------------|----------------|------------------------|-------|
 | 2026-03-12 | White paper + efficiency analysis | EFFICIENCY_WHITEPAPER.md created; generate_whitepaper_docx.py; generate_exec_deck.py (10-slide pptx) | ~45 | RGBColor bug fixed; sandbox ENOSPC workaround; user runs scripts manually |
 | 2026-03-12 | FEAT-038 + documentation system | FEAT-038 shipped (v4.7.0): templates.ts, Settings card, Help section; FEATURE_SPECS.md; INTERACTION_LOG.md; BIZHUB_BUSINESS_DOCUMENT.md updated; all release notes + tracker updated | ~25 | Launched build in background while writing docs in parallel |
+| 2026-03-12 | Dynamic brand color + Smart Insights + CRM views + seed data | v4.7.1: dynamic brand color (14 files, CSS vars); v4.8.0: Smart Insights dashboard card (stock depletion, HR nudges, sales anomaly, grouped by category); v4.9.0: CRM table view with inline stage selector; v4.9.1: CRM view switcher (List/Kanban/Funnel); v4.9.2: grouped insights UI; seed.mjs: 7 inventory items + 85 sales txns + 3 employees + 6 CRM leads + HR data | ~35 | 762 insertions, 302 deletions this session. CRM Kanban + Funnel built by background agent in parallel. |
 
 ---
 
@@ -24,11 +25,11 @@ Used for the final Engineering Efficiency analysis when BzHub reaches its target
 
 | Metric | Value |
 |--------|-------|
-| Total sessions logged | 2 |
-| Total interaction time | ~65 mins |
-| Features shipped | FEAT-021, FEAT-023, FEAT-024, FEAT-025, FEAT-026 (v4.6.0), FEAT-035 (v4.5.0), FEAT-034 (v4.4.0) — prior sessions not logged |
+| Total sessions logged | 3 |
+| Total interaction time | ~100 mins |
+| Features shipped | FEAT-038 (v4.7.0), brand color (v4.7.1), FEAT-032a Smart Insights (v4.8.0), CRM table (v4.9.0), CRM view switcher (v4.9.1), grouped insights (v4.9.2) — plus prior sessions: FEAT-021/023/024/025/026 (v4.6.0), FEAT-035 (v4.5.0), FEAT-034 (v4.4.0) |
 | Bugs fixed | — |
-| Docs created | EFFICIENCY_WHITEPAPER.md, FEATURE_SPECS.md, generate_whitepaper_docx.py, generate_exec_deck.py, INTERACTION_LOG.md |
+| Docs created | EFFICIENCY_WHITEPAPER.md, FEATURE_SPECS.md, generate_whitepaper_docx.py, generate_exec_deck.py, INTERACTION_LOG.md, seed.mjs |
 
 ---
 
@@ -36,8 +37,8 @@ Used for the final Engineering Efficiency analysis when BzHub reaches its target
 
 | Metric | Value |
 |--------|-------|
-| Features shipped to date | 15+ (v1.0 → v4.6.0) |
-| Logged interaction time | ~65 mins |
+| Features shipped to date | 20+ (v1.0 → v4.9.2) |
+| Logged interaction time | ~100 mins |
 | LOC shipped (logged sessions) | TBD — run `git log --shortstat` after each session |
 | Features per hour of interaction | TBD — calculate at project end |
 | Industry baseline | ~1 major feature per engineer per 2-week sprint (~80 hrs) |

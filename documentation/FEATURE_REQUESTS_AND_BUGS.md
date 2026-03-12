@@ -868,14 +868,15 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 ## USP & Differentiation Ideas (2026-03-12)
 
 ### FEAT-032 — AI-Powered Insights
-- **Status:** Open
+- **Status:** Partial — FEAT-032a Done (v4.8.0 / v4.9.2), NL query parked Phase 4
 - **Priority:** High
 - **Target Phase:** Intelligence / Product Differentiation
-- **Summary:** Embed AI-driven recommendations throughout the app to surface actionable insights automatically.
-  - Stock forecasting: "You'll run out of X in ~12 days based on current sales velocity"
-  - HR nudges: "3 employees are due for appraisal this month"
-  - Sales anomaly: "Revenue is 22% below last month's average this week"
-  - Natural language query: type "Show me sales vs last month" and get a chart
+- **Completed (v4.8.0 / v4.9.2):**
+  - Smart Insights card on Dashboard — stock depletion forecasting, HR nudges (pending appraisals, overdue goals), approval nudges (leave/POs), sales anomaly detection
+  - Grouped by category: Inventory, HR, Operations, Sales
+  - All computed client-side from existing Supabase data
+- **Remaining (Phase 4 — FEAT-032b):**
+  - Natural language query: type "Show me sales vs last month" → chart (requires Claude API)
 - **Rationale:** Most SMB ERPs show raw data — none proactively tell you what to do next. This is a clear USP.
 
 ---
