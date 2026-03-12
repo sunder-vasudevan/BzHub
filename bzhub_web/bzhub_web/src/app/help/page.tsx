@@ -26,6 +26,7 @@ import {
   CalendarDays,
   ClipboardList,
   CheckCircle2,
+  UserCheck,
 } from "lucide-react"
 
 interface Section {
@@ -303,6 +304,34 @@ const sections: Section[] = [
       {
         heading: "Inventory Report",
         text: "Full stock list with each item's quantity, unit price, and total value (qty × price). Low-stock items are flagged with a badge.",
+      },
+    ],
+  },
+  {
+    id: "employee-portal",
+    icon: <Users className="h-5 w-5" />,
+    title: "Employee Self-Service Portal",
+    badge: "My Portal",
+    content: [
+      {
+        heading: "Selecting Yourself",
+        text: "Open 'My Portal' from the sidebar. Select your name from the dropdown to load your personal data. Login will replace this step in a future update.",
+      },
+      {
+        heading: "My Goals",
+        text: "View all goals assigned to you by your manager, including their status (Draft, In Progress, Completed) and due dates.",
+      },
+      {
+        heading: "My Appraisals — Self-Assessment",
+        text: "View appraisal cycles for your current or past periods. For Pending or In Progress appraisals, click 'Edit Self-Assessment' to submit your self-rating (0–5) and comments. This notifies your manager that your self-assessment is ready.",
+      },
+      {
+        heading: "My Leave",
+        text: "Submit new leave requests by selecting the leave type (Annual, Sick, Unpaid, Other), entering start and end dates, and an optional reason. Your request will appear as Pending until a manager approves or rejects it.",
+      },
+      {
+        heading: "My Skills",
+        text: "View your skills profile as set by your manager — grouped by category (Software, Hardware, Soft Skills, Domain Knowledge) with your proficiency level for each skill.",
       },
     ],
   },

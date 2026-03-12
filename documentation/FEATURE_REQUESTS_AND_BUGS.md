@@ -814,9 +814,9 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 > **Ultimate Goal:** WhatsApp-first operations + Multi-tenancy SaaS model. All features below should be built with this end-state in mind — e.g. notifications should be extensible to WhatsApp, data models should be org-aware from the start.
 
 ### Priority Order
-1. FEAT-034 — Approval Workflows
-2. FEAT-035 — Employee Self-Service Portal
-3. FEAT-021 — In-app Notification Center
+1. ~~FEAT-034 — Approval Workflows~~ ✅ Done v4.4.0
+2. ~~FEAT-035 — Employee Self-Service Portal~~ ✅ Done v4.5.0
+3. FEAT-021 — In-app Notification Center ← NEXT
 4. FEAT-023 — Customizable Dashboard
 5. FEAT-024 — Export/Import (Excel/PDF/CSV)
 6. FEAT-025 — Advanced Search & Filters
@@ -872,7 +872,7 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 ---
 
 ### FEAT-035 — Employee Self-Service Portal
-- **Status:** Open
+- **Status:** ✅ Done v4.5.0 (2026-03-12)
 - **Priority:** Medium
 - **Target Phase:** HR / Product Differentiation
 - **Summary:** Give employees their own login to view and interact with their own data.

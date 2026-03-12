@@ -1,5 +1,23 @@
 # BzHub v4.1.0 — Release Notes
 
+## v4.5.0 — Employee Self-Service Portal
+**Date:** 2026-03-12
+
+### New Features
+- **Employee Self-Service Portal** — new "My Portal" page in sidebar (`/employee-portal`)
+  - Employee selects their name from a dropdown (auth-ready: name picker swaps for logged-in user when FEAT-036 ships)
+  - **My Goals** — view all assigned goals with status and due dates
+  - **My Appraisals** — view appraisal history; submit self-rating (0–5) and comments for Pending/In Progress cycles
+  - **My Leave** — view own leave request history; submit new leave requests (Annual, Sick, Unpaid, Other)
+  - **My Skills** — read-only view of skills profile grouped by category with proficiency levels
+
+### Files Changed
+- `src/app/employee-portal/page.tsx` — new page (created)
+- `src/components/layout/Sidebar.tsx` — added "My Portal" nav item (UserCheck icon)
+- `src/app/help/page.tsx` — help section for Employee Self-Service Portal
+
+---
+
 ## v4.4.0 — Approval Workflows
 **Date:** 2026-03-12
 

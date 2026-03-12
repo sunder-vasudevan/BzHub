@@ -19,11 +19,13 @@ Use this file to store anything you want me to remember between sessions and pro
 - Repo: `/Users/scottvalentino/BzHub`
 - Web app: `bzhub_web/bzhub_web/`
 
-**Current version:** v4.3.0 (2026-03-11)
+**Current version:** v4.5.0 (2026-03-12) — live on Vercel
 
-**Live modules:** Dashboard, Operations (Inventory, POS, Suppliers), HR (Employees, Payroll, Goals, Appraisals, Skills), CRM (Contacts, Leads, Kanban), Reports, Settings
+**Live modules:** Dashboard, Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads, Kanban), Reports, Settings, Help, Employee Self-Service Portal
 
-**Known gap:** Login is hardcoded `admin/admin123` — no real auth yet.
+**Known gap:** Login is hardcoded `admin/admin123` — no real auth yet (FEAT-036, planned Phase 3).
+
+**Next feature to build:** FEAT-021 — In-app Notification Center
 
 ---
 
@@ -36,8 +38,8 @@ Use this file to store anything you want me to remember between sessions and pro
 
 ### 🔴 Phase 1 — Core Product Features
 1. ~~**FEAT-034** — Approval Workflows~~ ✅ Done (v4.4.0)
-2. **FEAT-035** — Employee Self-Service Portal (view goals, submit appraisal, apply leave)
-3. **FEAT-021** — In-app Notification Center
+2. ~~**FEAT-035** — Employee Self-Service Portal~~ ✅ Done (v4.5.0)
+3. **FEAT-021** — In-app Notification Center ← **START HERE NEXT SESSION**
 4. **FEAT-023** — Customizable Dashboard (drag/drop KPI cards, chart types, date ranges)
 5. **FEAT-024** — Export/Import (Excel, PDF, CSV)
 6. **FEAT-025** — Advanced Search & Filters (global search, group by, saved filters)
@@ -65,6 +67,7 @@ Use this file to store anything you want me to remember between sessions and pro
 ---
 
 ## Completed (Recent)
+- v4.5.0 — Employee Self-Service Portal (My Goals, My Appraisals, My Leave, My Skills)
 - v4.4.0 — Approval Workflows (Leave Requests, Purchase Orders, Appraisal Sign-off)
 - v4.3.0 — Goals, Appraisals, Skills Matrix
 - v4.2.0 — Reports page, Supplier management
@@ -72,8 +75,13 @@ Use this file to store anything you want me to remember between sessions and pro
 
 ---
 
-## Rules (Always Follow)
-- **After every major feature: update the Help page** at `bzhub_web/bzhub_web/src/app/help/page.tsx`
+## Rules (Always Follow — Every Feature)
+After every feature is completed, update ALL of these without being asked:
+1. `documentation/FEATURE_REQUESTS_AND_BUGS.md` — mark Done, update status
+2. `documentation/RELEASE_NOTES_v4.1.md` — add new version entry
+3. `chat_persistent_notes/NOTES.md` — tick off feature, update version, set next feature
+4. Memory files at `.claude/projects/.../memory/` — update project state
+5. `bzhub_web/bzhub_web/src/app/help/page.tsx` — add help section for new feature
 
 ---
 
