@@ -49,7 +49,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
-              style={{ backgroundColor: "#6D28D9" }}
+              style={{ backgroundColor: "var(--brand-color)" }}
             >
               Bz
             </div>

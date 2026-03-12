@@ -95,7 +95,7 @@ function Spinner() {
     <div className="flex items-center justify-center py-20">
       <div
         className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-        style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+        style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
       />
     </div>
   )
@@ -305,7 +305,7 @@ function EmployeesTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-[#6D28D9]"
+                        className="h-7 text-xs text-[var(--brand-color)]"
                         onClick={() => setEditing(emp)}
                       >
                         Edit
@@ -384,9 +384,9 @@ function PayrollTab() {
         <CardContent className="p-4 flex items-center gap-4">
           <div
             className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "#6D28D920" }}
+            style={{ backgroundColor: "color-mix(in srgb, var(--brand-color) 12%, transparent)" }}
           >
-            <DollarSign className="h-5 w-5" style={{ color: "#6D28D9" }} />
+            <DollarSign className="h-5 w-5" style={{ color: "var(--brand-color)" }} />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total Payroll This Month</p>
@@ -697,7 +697,7 @@ function GoalsTab() {
                   step={5}
                   value={checkinProgress}
                   onChange={(e) => setCheckinProgress(Number(e.target.value))}
-                  className="w-full accent-[#6D28D9]"
+                  className="w-full accent-[var(--brand-color)]"
                 />
               </div>
               <div className="space-y-1.5">
@@ -747,7 +747,7 @@ function GoalsTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-[#6D28D9]"
+                        className="h-7 text-xs text-[var(--brand-color)]"
                         onClick={() => { setCheckinGoal(g); setCheckinProgress(0); setCheckinNotes("") }}
                       >
                         Check-in
@@ -755,7 +755,7 @@ function GoalsTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-[#6D28D9]"
+                        className="h-7 text-xs text-[var(--brand-color)]"
                         onClick={() => { setEditing(g); setEditStatus(g.status) }}
                       >
                         Edit
@@ -1070,7 +1070,7 @@ function AppraisalsTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-[#6D28D9]"
+                        className="h-7 text-xs text-[var(--brand-color)]"
                         onClick={() => { setEditing(a); setEditStatus(a.status) }}
                       >
                         Edit
@@ -1695,7 +1695,7 @@ export default function HRPage() {
                   ? "text-white"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
-              style={activeTab === t.key ? { backgroundColor: "#6D28D9" } : undefined}
+              style={activeTab === t.key ? { backgroundColor: "var(--brand-color)" } : undefined}
             >
               {t.icon}
               {t.label}

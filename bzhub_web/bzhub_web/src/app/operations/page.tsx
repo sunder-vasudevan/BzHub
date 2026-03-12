@@ -456,7 +456,7 @@ function InventoryTab({ lowStockOnly = false }: { lowStockOnly?: boolean }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-[#6D28D9]"
+                        className="h-7 text-xs text-[var(--brand-color)]"
                         onClick={() => setEditing(item)}
                       >
                         Edit
@@ -519,7 +519,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
               <button
                 key={item.id}
                 onClick={() => addToCart(item)}
-                className="bg-white border border-border rounded-xl overflow-hidden text-left hover:border-[#6D28D9] hover:shadow-sm transition-all"
+                className="bg-white border border-border rounded-xl overflow-hidden text-left hover:border-[var(--brand-color)] hover:shadow-sm transition-all"
               >
                 {item.image_path ? (
                   <img
@@ -534,7 +534,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
                 )}
                 <div className="p-3">
                   <p className="text-sm font-semibold leading-tight line-clamp-2">{item.item_name}</p>
-                  <p className="text-sm font-bold mt-1" style={{ color: "#6D28D9" }}>
+                  <p className="text-sm font-bold mt-1" style={{ color: "var(--brand-color)" }}>
                     {currency}{Number(item.sale_price || 0).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">Stock: {item.quantity}</p>
@@ -564,7 +564,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
                   <span className="truncate flex-1 text-foreground">
                     {c.item.item_name} ×{c.qty}
                   </span>
-                  <span className="font-medium ml-2" style={{ color: "#6D28D9" }}>
+                  <span className="font-medium ml-2" style={{ color: "var(--brand-color)" }}>
                     {currency}{(Number(c.item.sale_price || 0) * c.qty).toFixed(2)}
                   </span>
                   <button
@@ -579,7 +579,7 @@ function POSTab({ inventory }: { inventory: InventoryItem[] }) {
             <div className="mt-3 border-t border-border pt-3">
               <div className="flex justify-between font-semibold text-sm mb-3">
                 <span>Total</span>
-                <span style={{ color: "#6D28D9" }}>{currency}{total.toFixed(2)}</span>
+                <span style={{ color: "var(--brand-color)" }}>{currency}{total.toFixed(2)}</span>
               </div>
               <Button
                 disabled={cart.length === 0}
@@ -891,7 +891,7 @@ function SuppliersTab() {
         <div className="flex items-center justify-center py-20">
           <div
             className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+            style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
           />
         </div>
       ) : (
@@ -922,7 +922,7 @@ function SuppliersTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-[#6D28D9]"
+                        className="h-7 text-xs text-[var(--brand-color)]"
                         onClick={() => setEditing(s)}
                       >
                         Edit
@@ -1100,7 +1100,7 @@ function PurchaseOrdersTab() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }} />
+          <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }} />
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -1235,7 +1235,7 @@ function OperationsInner() {
                   ? "text-white"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
-              style={activeTab === t.key ? { backgroundColor: "#6D28D9" } : undefined}
+              style={activeTab === t.key ? { backgroundColor: "var(--brand-color)" } : undefined}
             >
               {t.icon}
               {t.label}

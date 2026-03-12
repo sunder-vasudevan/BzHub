@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --brand-color: #6D28D9;
+    --brand-color-hover: #5B21B6;
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;

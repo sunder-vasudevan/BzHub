@@ -146,7 +146,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Building2 className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                <Building2 className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
                 Company Profile
               </CardTitle>
             </CardHeader>
@@ -155,7 +155,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-center py-10">
                   <div
                     className="h-7 w-7 rounded-full border-4 border-t-transparent animate-spin"
-                    style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+                    style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
                   />
                 </div>
               ) : (
@@ -217,7 +217,7 @@ export default function SettingsPage() {
                     <Button
                       type="submit"
                       disabled={savingCompany}
-                      style={{ backgroundColor: "#6D28D9" }}
+                      style={{ backgroundColor: "var(--brand-color)" }}
                       className="text-white hover:opacity-90"
                     >
                       {savingCompany ? "Saving…" : "Save Changes"}
@@ -238,7 +238,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Coins className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                <Coins className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
                 Currency
               </CardTitle>
             </CardHeader>
@@ -261,7 +261,7 @@ export default function SettingsPage() {
                   <Button
                     type="button"
                     onClick={handleSaveCurrency}
-                    style={{ backgroundColor: "#6D28D9" }}
+                    style={{ backgroundColor: "var(--brand-color)" }}
                     className="text-white hover:opacity-90"
                   >
                     Save Currency
@@ -281,7 +281,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <LayoutTemplate className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                <LayoutTemplate className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
                 Industry Template
               </CardTitle>
             </CardHeader>
@@ -333,7 +333,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <User className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                <User className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
                 Current User
               </CardTitle>
             </CardHeader>
@@ -361,7 +361,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Info className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                <Info className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
                 Application Info
               </CardTitle>
             </CardHeader>
@@ -385,7 +385,7 @@ export default function SettingsPage() {
                       <>
                         <div
                           className="h-3.5 w-3.5 rounded-full border-2 border-t-transparent animate-spin"
-                          style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+                          style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
                         />
                         <span className="text-xs text-muted-foreground">Checking…</span>
                       </>

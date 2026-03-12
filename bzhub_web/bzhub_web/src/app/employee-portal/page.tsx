@@ -61,7 +61,7 @@ function Spinner() {
     <div className="flex items-center justify-center py-20">
       <div
         className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-        style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+        style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
       />
     </div>
   )
@@ -501,7 +501,7 @@ export default function EmployeePortalPage() {
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: "#6D28D9" }}
+            style={{ backgroundColor: "var(--brand-color)" }}
           >
             <UserCheck className="h-5 w-5 text-white" />
           </div>
@@ -540,11 +540,11 @@ export default function EmployeePortalPage() {
           <>
             {/* Welcome banner */}
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-violet-50 border border-violet-100">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: "#6D28D9" }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: "var(--brand-color)" }}>
                 {(selectedEmployee?.name ?? "?").slice(0, 1).toUpperCase()}
               </div>
               <div>
-                <p className="text-sm font-medium text-[#6D28D9]">
+                <p className="text-sm font-medium text-[var(--brand-color)]">
                   Hi, {selectedEmployee?.name?.split(" ")[0]}!
                 </p>
                 {selectedEmployee?.designation && (
@@ -561,14 +561,14 @@ export default function EmployeePortalPage() {
                   onClick={() => setTab(t.key)}
                   className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                     tab === t.key
-                      ? "border-[#6D28D9] text-[#6D28D9]"
+                      ? "border-[var(--brand-color)] text-[var(--brand-color)]"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {t.icon}
                   {t.label}
                   {t.count !== undefined && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.key ? "bg-violet-100 text-[#6D28D9]" : "bg-muted text-muted-foreground"}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.key ? "bg-violet-100 text-[var(--brand-color)]" : "bg-muted text-muted-foreground"}`}>
                       {t.count}
                     </span>
                   )}

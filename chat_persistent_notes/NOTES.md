@@ -19,13 +19,13 @@ Use this file to store anything you want me to remember between sessions and pro
 - Repo: `/Users/scottvalentino/BzHub`
 - Web app: `bzhub_web/bzhub_web/`
 
-**Current version:** v4.6.0 (2026-03-12) — live on Vercel
+**Current version:** v4.7.0 (2026-03-12) — live on Vercel
 
-**Live modules:** Dashboard, Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads, Kanban), Reports, Settings, Help, Employee Self-Service Portal
+**Live modules:** Dashboard, Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads, Kanban), Reports, Settings (incl. Industry Templates), Help, Employee Self-Service Portal
 
 **Known gap:** Login is hardcoded `admin/admin123` — no real auth yet (FEAT-036, planned Phase 3).
 
-**Next feature to build:** FEAT-038 — Industry-Specific Templates
+**Next feature to build:** FEAT-039 — Offline-First Mode
 
 ---
 
@@ -46,8 +46,8 @@ Use this file to store anything you want me to remember between sessions and pro
 7. ~~**FEAT-026**~~ ✅ Done v4.6.0 — Audit Log
 
 ### 🟠 Phase 2 — USP / Differentiation
-8. **FEAT-038** — Industry-Specific Templates ← **START HERE NEXT SESSION** (Retail, Clinic, Restaurant, Distributor — one-click setup)
-9. **FEAT-039** — Offline-First Mode (works without internet, syncs on reconnect)
+8. ~~**FEAT-038**~~ ✅ Done (v4.7.0) — Industry-Specific Templates (Retail, Clinic, Restaurant, Distributor — one-click setup)
+9. **FEAT-039** — Offline-First Mode ← **START HERE NEXT SESSION** (works without internet, syncs on reconnect)
 10. **FEAT-040** — GST / Tax Compliance India (GST invoicing, GSTR-1/3B export — compete with Tally)
 11. **FEAT-032** — AI-Powered Insights (stock forecasting, HR nudges, sales anomaly, NL queries)
 
@@ -67,6 +67,7 @@ Use this file to store anything you want me to remember between sessions and pro
 ---
 
 ## Completed (Recent)
+- v4.7.0 — Industry-Specific Templates (Retail, Clinic, Restaurant, Distributor, General)
 - v4.6.0 — Notification Center, Dashboard Customization, CSV Export, Global Search, Audit Log
 - v4.5.0 — Employee Self-Service Portal (My Goals, My Appraisals, My Leave, My Skills)
 - v4.4.0 — Approval Workflows (Leave Requests, Purchase Orders, Appraisal Sign-off)

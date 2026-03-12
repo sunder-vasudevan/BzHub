@@ -44,8 +44,8 @@ export default function TopNav({ active }: TopNavProps) {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-6">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg text-primary" style={{ color: '#6D28D9' }}>
-          <span className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: '#6D28D9' }}>
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg text-primary" style={{ color: 'var(--brand-color)' }}>
+          <span className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: 'var(--brand-color)' }}>
             Bz
           </span>
           BzHub

@@ -106,6 +106,41 @@ Single source of truth for new feature requests, bugs, and follow-up items.
 - **Target Phase:** Security/Product
 - **Summary:** Track user actions and changes for security and compliance.
 
+### FEAT-038 — Industry-Specific Templates
+- **Status:** Done v4.7.0
+- **Priority:** High
+- **Target Phase:** Phase 2 — USP / Differentiation
+- **Summary:** One-click industry setup for Retail, Clinic, Restaurant, and Wholesale Distributor. Applies dashboard KPI defaults and pre-configuration optimised for each industry type.
+- **What it does:**
+  - Template selector card on Settings page with 5 options: General, Retail, Clinic, Restaurant, Distributor
+  - Each template sets which dashboard KPI cards are visible by default
+  - Stored in localStorage (`bzhub_template`) — no DB change required
+  - Applying a template resets dashboard prefs to industry defaults; user can still customise further
+- **What it does NOT do:**
+  - Does not hide/show sidebar modules (Phase 2 enhancement)
+  - Does not seed sample data
+  - Does not require Supabase schema change
+- **Key files:** `src/lib/templates.ts` (new), `src/app/settings/page.tsx`, `src/app/help/page.tsx`
+- **Full spec:** See `documentation/FEATURE_SPECS.md`
+
+### FEAT-039 — Offline-First Mode
+- **Status:** Planned
+- **Priority:** High
+- **Target Phase:** Phase 2 — USP / Differentiation
+- **Summary:** Core operations (Inventory, POS) work without internet connectivity. Changes queue locally and sync to Supabase on reconnect. Critical for Indian SME market with unreliable connectivity.
+
+### FEAT-040 — GST / Tax Compliance (India)
+- **Status:** Planned
+- **Priority:** High
+- **Target Phase:** Phase 2 — USP / Differentiation
+- **Summary:** GST-compliant invoicing with GSTIN, HSN/SAC codes, CGST/SGST/IGST calculation. GSTR-1 export. Directly competes with Tally's primary value proposition.
+
+### FEAT-032 — AI-Powered Insights
+- **Status:** Planned
+- **Priority:** Medium
+- **Target Phase:** Phase 2 — USP / Differentiation
+- **Summary:** Stock forecasting, HR nudges, sales anomaly detection, and natural language queries powered by Claude API.
+
 ### FEAT-027 — Quick Add/Shortcut Bar
 - **Status:** Open
 - **Priority:** Low

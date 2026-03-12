@@ -8,6 +8,7 @@ import Sidebar from "./Sidebar"
 import GlobalSearch, { GlobalSearchTrigger } from "@/components/GlobalSearch"
 import { fetchNotifications } from "@/lib/notifications"
 import type { AppNotification } from "@/lib/notifications"
+import { initBrandColor } from '@/lib/templates'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -37,6 +38,10 @@ export default function AppLayout({ children, activePage }: AppLayoutProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    initBrandColor()
+  }, [])
 
   useEffect(() => {
     const stored = localStorage.getItem("bzhub_user")
@@ -94,8 +99,8 @@ export default function AppLayout({ children, activePage }: AppLayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/dashboard" className="flex items-center gap-1.5 font-bold text-base" style={{ color: "#6D28D9" }}>
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: "#6D28D9" }}>
+          <Link href="/dashboard" className="flex items-center gap-1.5 font-bold text-base" style={{ color: "var(--brand-color)" }}>
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: "var(--brand-color)" }}>
               Bz
             </span>
             BzHub

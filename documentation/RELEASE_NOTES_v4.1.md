@@ -1,5 +1,26 @@
 # BzHub v4.1.0 — Release Notes
 
+## v4.7.0 — Industry-Specific Templates
+**Date:** 2026-03-12
+
+### New Features
+- **FEAT-038** — Industry-Specific Templates (Settings → Industry Template card)
+  - 5 templates: General Business, Retail Store, Medical Clinic, Restaurant/F&B, Wholesale Distributor
+  - Each template pre-configures dashboard KPI visibility for the industry type
+  - Applying a template resets `bzhub_dashboard_prefs` in localStorage to industry-appropriate defaults
+  - Active template shown with visual selection state (coloured border + checkmark)
+  - Users can still customise KPIs further from Dashboard after applying a template
+
+### Files Changed
+- `src/lib/templates.ts` — new: template definitions, `getActiveTemplate()`, `applyTemplate()`
+- `src/app/settings/page.tsx` — Industry Template card added
+- `src/app/help/page.tsx` — Industry Templates help section added
+- `documentation/FEATURE_SPECS.md` — new: detailed spec for all features
+- `documentation/INTERACTION_LOG.md` — new: session tracking for efficiency analysis
+- `documentation/BIZHUB_BUSINESS_DOCUMENT.md` — Section 5 and Roadmap updated to v4.7.0
+
+---
+
 ## v4.6.0 — Notification Center, Dashboard Customization, CSV Export, Global Search, Audit Log
 **Date:** 2026-03-12
 

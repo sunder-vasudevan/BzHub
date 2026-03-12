@@ -177,7 +177,7 @@ export default function CRMPage() {
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-violet-100">
-                <DollarSign className="h-4 w-4 text-[#6D28D9]" />
+                <DollarSign className="h-4 w-4 text-[var(--brand-color)]" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Pipeline Value</p>
@@ -221,7 +221,7 @@ export default function CRMPage() {
           <div className="flex items-center justify-center py-20">
             <div
               className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-              style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+              style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
             />
           </div>
         ) : (

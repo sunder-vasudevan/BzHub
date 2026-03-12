@@ -314,7 +314,7 @@ export default function DashboardPage() {
             <div className="text-center space-y-2">
               <div
                 className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin mx-auto"
-                style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+                style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
               />
               <p className="text-muted-foreground text-sm">Loading dashboard…</p>
             </div>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                   title="Today's Sales"
                   value={`${currency}${kpis.today_sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
                   icon={<DollarSign className="h-4 w-4" />}
-                  iconBg="#6D28D9"
+                  iconBg="var(--brand-color)"
                   trend="Revenue today"
                 />
               )}
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                               ? "text-white border-transparent"
                               : "text-muted-foreground border-border hover:bg-muted"
                           }`}
-                          style={trendDays === p.days && !customDays ? { backgroundColor: "#6D28D9", borderColor: "#6D28D9" } : {}}
+                          style={trendDays === p.days && !customDays ? { backgroundColor: "var(--brand-color)", borderColor: "var(--brand-color)" } : {}}
                         >
                           {p.label}
                         </button>
@@ -499,7 +499,7 @@ export default function DashboardPage() {
                         <Line
                           type="monotone"
                           dataKey="total"
-                          stroke="#6D28D9"
+                          stroke="var(--brand-color)"
                           strokeWidth={2}
                           dot={false}
                         />
@@ -529,7 +529,7 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-2">
                             <div
                               className="h-2 w-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: "#6D28D9" }}
+                              style={{ backgroundColor: "var(--brand-color)" }}
                             />
                             <span className="text-sm text-muted-foreground">
                               {row.date}

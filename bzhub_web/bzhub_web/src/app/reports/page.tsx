@@ -127,17 +127,17 @@ function SalesReportTab() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">Total Revenue</p>
-              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>
+              <p className="text-xl font-bold" style={{ color: "var(--brand-color)" }}>
                 {currency}{totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">Total Transactions</p>
-              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{totalSales}</p>
+              <p className="text-xl font-bold" style={{ color: "var(--brand-color)" }}>{totalSales}</p>
             </div>
             <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">Months on Record</p>
-              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{summary.length}</p>
+              <p className="text-xl font-bold" style={{ color: "var(--brand-color)" }}>{summary.length}</p>
             </div>
           </div>
         </>
@@ -147,7 +147,7 @@ function SalesReportTab() {
         <div className="flex items-center justify-center py-20">
           <div
             className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+            style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
           />
         </div>
       ) : (
@@ -165,7 +165,7 @@ function SalesReportTab() {
               {summary.map((row) => (
                 <TableRow key={row.month}>
                   <TableCell className="font-medium">{row.month}</TableCell>
-                  <TableCell className="text-right font-semibold" style={{ color: "#6D28D9" }}>
+                  <TableCell className="text-right font-semibold" style={{ color: "var(--brand-color)" }}>
                     {currency}{row.revenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right">{row.numSales}</TableCell>
@@ -230,7 +230,7 @@ function TopSellersTab() {
         <div className="flex items-center justify-center py-20">
           <div
             className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+            style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
           />
         </div>
       ) : data.length === 0 ? (
@@ -264,7 +264,7 @@ function TopSellersTab() {
               <Tooltip
                 formatter={(value: number) => [`${value} units`, "Qty Sold"]}
               />
-              <Bar dataKey="qty_sold" fill="#6D28D9" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="qty_sold" fill="var(--brand-color)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
 
@@ -282,7 +282,7 @@ function TopSellersTab() {
                   <TableRow key={row.item_name}>
                     <TableCell className="text-muted-foreground text-sm">{i + 1}</TableCell>
                     <TableCell className="font-medium">{row.item_name}</TableCell>
-                    <TableCell className="text-right font-semibold" style={{ color: "#6D28D9" }}>
+                    <TableCell className="text-right font-semibold" style={{ color: "var(--brand-color)" }}>
                       {row.qty_sold}
                     </TableCell>
                   </TableRow>
@@ -353,11 +353,11 @@ function InventoryReportTab() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">Total Items</p>
-              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>{items.length}</p>
+              <p className="text-xl font-bold" style={{ color: "var(--brand-color)" }}>{items.length}</p>
             </div>
             <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">Total Inventory Value</p>
-              <p className="text-xl font-bold" style={{ color: "#6D28D9" }}>
+              <p className="text-xl font-bold" style={{ color: "var(--brand-color)" }}>
                 {currency}{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -373,7 +373,7 @@ function InventoryReportTab() {
         <div className="flex items-center justify-center py-20">
           <div
             className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+            style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
           />
         </div>
       ) : (
@@ -559,7 +559,7 @@ function ForecastTab() {
                     ? "text-white border-transparent"
                     : "text-muted-foreground border-border hover:border-foreground"
                 }`}
-                style={sortBy === opt ? { backgroundColor: "#6D28D9" } : undefined}
+                style={sortBy === opt ? { backgroundColor: "var(--brand-color)" } : undefined}
               >
                 {opt === "days" ? "Days Remaining" : opt === "stock" ? "Stock Level" : "Sales Velocity"}
               </button>
@@ -572,7 +572,7 @@ function ForecastTab() {
         <div className="flex items-center justify-center py-20">
           <div
             className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+            style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
           />
         </div>
       ) : (
@@ -645,7 +645,7 @@ export default function ReportsPage() {
                   ? "text-white"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
-              style={activeTab === t.key ? { backgroundColor: "#6D28D9" } : undefined}
+              style={activeTab === t.key ? { backgroundColor: "var(--brand-color)" } : undefined}
             >
               {t.icon}
               {t.label}

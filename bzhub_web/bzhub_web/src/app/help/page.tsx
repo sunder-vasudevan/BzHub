@@ -502,7 +502,7 @@ function SectionCard({ section }: { section: Section }) {
         <CardHeader className="py-4 px-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-[#6D28D9]">{section.icon}</span>
+              <span className="text-[var(--brand-color)]">{section.icon}</span>
               <CardTitle className="text-base font-semibold">{section.title}</CardTitle>
               {section.badge && (
                 <Badge variant="secondary" className="text-xs">{section.badge}</Badge>
@@ -537,9 +537,9 @@ export default function HelpPage() {
         <div className="flex items-center gap-3 mb-6">
           <div
             className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "#6D28D920" }}
+            style={{ backgroundColor: "color-mix(in srgb, var(--brand-color) 12%, transparent)" }}
           >
-            <HelpCircle className="h-5 w-5" style={{ color: "#6D28D9" }} />
+            <HelpCircle className="h-5 w-5" style={{ color: "var(--brand-color)" }} />
           </div>
           <div>
             <h1 className="text-2xl font-bold">User Guide</h1>

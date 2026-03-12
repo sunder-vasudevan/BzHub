@@ -76,11 +76,11 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
             <Link
               href="/dashboard"
               className="flex items-center gap-2 font-bold text-lg"
-              style={{ color: "#6D28D9" }}
+              style={{ color: "var(--brand-color)" }}
             >
               <span
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                style={{ backgroundColor: "#6D28D9" }}
+                style={{ backgroundColor: "var(--brand-color)" }}
               >
                 Bz
               </span>
@@ -91,7 +91,7 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
             <Link href="/dashboard" className="mx-auto">
               <span
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                style={{ backgroundColor: "#6D28D9" }}
+                style={{ backgroundColor: "var(--brand-color)" }}
               >
                 Bz
               </span>
@@ -119,13 +119,13 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
                 className={cn(
                   "flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-violet-50 text-[#6D28D9]"
+                    ? "bg-violet-50 text-[var(--brand-color)]"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
                 title={collapsed ? label : undefined}
               >
                 <Icon
-                  className={cn("h-5 w-5 flex-shrink-0", isActive && "text-[#6D28D9]")}
+                  className={cn("h-5 w-5 flex-shrink-0", isActive && "text-[var(--brand-color)]")}
                 />
                 {!collapsed && <span>{label}</span>}
               </Link>
@@ -146,7 +146,7 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarFallback
                 className="text-xs font-semibold text-white"
-                style={{ backgroundColor: "#6D28D9" }}
+                style={{ backgroundColor: "var(--brand-color)" }}
               >
                 {initials}
               </AvatarFallback>

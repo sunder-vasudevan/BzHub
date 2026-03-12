@@ -179,40 +179,52 @@ The desktop app remains functional and will be kept for backward compatibility. 
 
 ## 5. Where We Are Today
 
+**Current Version:** v4.6.0 (Live on Vercel + Supabase) — *Last updated: March 12, 2026*
+
 ### What Works Right Now
 
-| Module | Status | Platform |
+**Web App (Production — Vercel)**
+
+| Module | Features | Status |
 |---|---|---|
-| Inventory Management | ✅ Full | Desktop |
-| Point of Sale | ✅ Full | Desktop |
-| CRM Contacts | ✅ Full | Desktop + API |
-| CRM Pipeline (Kanban) | ✅ Full | Desktop + API |
-| HR — Employees | ✅ Full | Desktop |
-| HR — Payroll | ✅ Full | Desktop |
-| HR — Appraisals (360°) | ✅ Full | Desktop |
-| Dashboard & Analytics | ✅ Full | Desktop + API |
-| Reports (period selector) | ✅ Full | Desktop |
-| Visitor Log | ✅ Full | Desktop |
-| Email Alerts (SMTP) | ✅ Full | Desktop |
-| Excel Import/Export | ✅ Full | Desktop |
-| Activity Logging | ✅ Full | Desktop |
-| Dark Mode | ✅ Full | Desktop |
-| REST API | ✅ Full (6 routers) | FastAPI |
-| Web — Login | ✅ Skeleton | Next.js |
-| Web — Dashboard | ✅ Skeleton | Next.js |
-| Web — Operations | ✅ Skeleton | Next.js |
-| Web — CRM | ✅ Skeleton | Next.js |
+| Dashboard | KPI cards (6), sales trend chart, fast/slow movers, customizable layout | ✅ Full |
+| Operations — Inventory | Full CRUD, image upload, sortable table, low-stock alerts | ✅ Full |
+| Operations — POS | Cart, checkout, bills history | ✅ Full |
+| Operations — Suppliers | Supplier directory CRUD | ✅ Full |
+| Operations — Purchase Orders | Create POs, approval workflow (Pending → Approved → Delivered) | ✅ Full |
+| CRM — Contacts | Full CRUD, search | ✅ Full |
+| CRM — Leads & Pipeline | Kanban board, lead scoring, pipeline value | ✅ Full |
+| HR — Employees | Employee records CRUD, payroll | ✅ Full |
+| HR — Goals & Check-ins | Set goals, log progress check-ins | ✅ Full |
+| HR — Appraisals | Self/manager ratings, sign-off workflow | ✅ Full |
+| HR — Skills Matrix | Skills catalogue, employee skill assignments | ✅ Full |
+| HR — Leave Requests | Submit & approve leave with workflow | ✅ Full |
+| Employee Self-Service Portal | My Goals, My Appraisals, My Leave, My Skills | ✅ Full |
+| Reports | Sales report, Top Sellers chart, Inventory report, CSV export | ✅ Full |
+| Notification Center | Bell icon, real-time alerts from app data | ✅ Full |
+| Global Search | Cmd+K modal across inventory, employees, contacts, leads | ✅ Full |
+| Audit Log | Full action history with filters | ✅ Full |
+| Settings | Company profile, currency, app info | ✅ Full |
+| Help | In-app user guide for all modules | ✅ Full |
+| Industry Templates | One-click industry setup (Retail, Clinic, Restaurant, Distributor) | 🔄 In Progress |
+
+**Known Intentional Gaps (by design — not oversights):**
+- Login is hardcoded `admin/admin123` — real auth (FEAT-036) is Phase 3
+- RLS policies are open — will be scoped when multi-tenancy (FEAT-037) ships
+- No GST compliance — FEAT-040 is Phase 2
 
 ### Tech Stack Summary
 
 ```
-Backend:     Python 3.x, FastAPI, SQLite (→ PostgreSQL)
-Desktop UI:  Tkinter, matplotlib
-Web UI:      Next.js 14, TypeScript, Tailwind CSS 4, shadcn/ui
-Testing:     pytest, 24 tests, 100% pass
-Docs:        21 markdown files
-Database:    SQLite (local), adapter ready for PostgreSQL
+Web UI:      Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
+Database:    Supabase (PostgreSQL), RLS enabled
+Deployment:  Vercel (auto-deploy on git push to main)
+Auth:        Hardcoded (real auth = Phase 3)
+Docs:        25+ markdown files + this document
 ```
+
+> **Full feature specifications** with user value, limitations, and technical notes for every feature:
+> See `documentation/FEATURE_SPECS.md`
 
 ---
 
@@ -387,32 +399,55 @@ This section is written with full honesty. Every project has decisions they got 
 
 ## 8. The Way Forward — Roadmap
 
-### Immediate Priority (Next 30 Days) — Make It Shippable
+*Updated March 12, 2026. Web app is live on Vercel at v4.6.0 — the foundation sprint is complete.*
 
-The single most important near-term milestone is a **complete, functional web app** that matches the desktop app's capabilities.
+### ✅ Completed (Phase 1 — Foundation)
 
-**Sprint 1 — Web Frontend Completion:**
-- [ ] Build Inventory management page with shadcn/ui DataTable
-- [ ] Build POS page with cart and checkout flow
-- [ ] Build CRM Contacts page with CRUD modals
-- [ ] Build CRM Pipeline as interactive Kanban board (with drag-and-drop)
-- [ ] Build HR — Employees page
-- [ ] Build Reports page with chart components (Recharts)
-- [ ] Add toast notifications, loading states, error handling throughout
-- [ ] Responsive layout for tablet/mobile
+All web frontend modules shipped to Vercel + Supabase:
+- Full Operations, CRM, HR, Reports, Dashboard modules — ✅ Done
+- Approval workflows (Leave, PO, Appraisal) — ✅ Done (v4.4.0)
+- Employee Self-Service Portal — ✅ Done (v4.5.0)
+- Notification Center, Customizable Dashboard, CSV Export, Global Search, Audit Log — ✅ Done (v4.6.0)
 
-**Sprint 2 — Database for Cloud:**
-- [ ] Implement `PostgreSQLAdapter` (same interface as SQLiteAdapter)
-- [ ] Set up connection pooling for concurrent users
-- [ ] Environment-based database switching (SQLite for dev, PostgreSQL for prod)
-- [ ] Write migration scripts for initial schema
+---
 
-**Sprint 3 — Deployment:**
-- [ ] Dockerize FastAPI backend
-- [ ] Deploy to Railway / Render / AWS (initial)
-- [ ] Configure environment variables for production
-- [ ] Set up HTTPS and domain
-- [ ] Implement basic rate limiting and security headers
+### Phase 2 — USP / Differentiation (Now)
+
+**FEAT-038 — Industry-Specific Templates** ← *In Progress*
+- One-click industry setup for Retail, Clinic, Restaurant, Distributor
+- Pre-configures dashboard KPIs and defaults for each industry type
+
+**FEAT-039 — Offline-First Mode**
+- Core operations work without internet; sync on reconnect
+- Critical for Indian SME market with unreliable connectivity
+
+**FEAT-040 — GST / Tax Compliance (India)**
+- GST invoicing with GSTIN, HSN/SAC codes, CGST/SGST/IGST
+- GSTR-1 export — directly competes with Tally's primary value prop
+
+**FEAT-032 — AI-Powered Insights**
+- Stock forecasting, HR nudges, sales anomaly detection
+- Natural language queries ("How much did we sell last week?")
+
+---
+
+### Phase 3 — Multi-User & SaaS Architecture
+
+- **FEAT-036** — Supabase Auth (real login — blocker for everything below)
+- **FEAT-022** — RBAC (Admin, Manager, Employee role gates)
+- **FEAT-037** — Multi-Tenancy (org isolation via `organization_id` + RLS)
+- Subscription billing integration (Razorpay / Stripe)
+- Free trial flow (14 days, no credit card)
+
+---
+
+### Phase 4 — The Crown Jewel
+
+**FEAT-033 — WhatsApp / SMS Integration**
+- Send invoice payment links via WhatsApp
+- Low-stock and approval notifications via WhatsApp
+- Run operations via WhatsApp commands
+- This is the primary moat against every desktop ERP competitor in India
 
 ---
 

@@ -5,6 +5,7 @@ export interface IndustryTemplate {
   name: string
   description: string
   color: string
+  colorHover: string
   defaultHiddenKPIs: string[]
   highlights: string[]
 }
@@ -15,6 +16,7 @@ export const TEMPLATES: IndustryTemplate[] = [
     name: 'General Business',
     description: 'A balanced setup for any SMB. All modules enabled with standard KPIs.',
     color: '#6D28D9',
+    colorHover: '#5B21B6',
     defaultHiddenKPIs: [],
     highlights: ['All modules active', 'Standard KPIs', 'Full CRM pipeline', 'HR & Payroll'],
   },
@@ -23,6 +25,7 @@ export const TEMPLATES: IndustryTemplate[] = [
     name: 'Retail Store',
     description: 'Optimised for retail and e-commerce with inventory and sales focus.',
     color: '#0891B2',
+    colorHover: '#0E7490',
     defaultHiddenKPIs: ['pipeline_value'],
     highlights: ['Inventory & POS focus', 'Sales reports', 'Supplier management', 'Low-stock alerts'],
   },
@@ -31,6 +34,7 @@ export const TEMPLATES: IndustryTemplate[] = [
     name: 'Medical Clinic',
     description: 'Built for small clinics managing staff, leave, and operations.',
     color: '#059669',
+    colorHover: '#047857',
     defaultHiddenKPIs: ['pipeline_value', 'low_stock'],
     highlights: ['Staff & HR focus', 'Leave management', 'Employee self-service', 'Appraisals'],
   },
@@ -39,6 +43,7 @@ export const TEMPLATES: IndustryTemplate[] = [
     name: 'Restaurant / F&B',
     description: 'Designed for food service with daily revenue and POS operations.',
     color: '#DC2626',
+    colorHover: '#B91C1C',
     defaultHiddenKPIs: ['pipeline_value'],
     highlights: ['Daily revenue KPIs', 'POS transactions', 'Inventory & suppliers', 'Staff scheduling'],
   },
@@ -47,6 +52,7 @@ export const TEMPLATES: IndustryTemplate[] = [
     name: 'Wholesale Distributor',
     description: 'For distributors managing customer pipelines and bulk orders.',
     color: '#D97706',
+    colorHover: '#B45309',
     defaultHiddenKPIs: [],
     highlights: ['CRM pipeline primary', 'Purchase orders', 'Supplier network', 'Sales analytics'],
   },
@@ -75,4 +81,17 @@ export function applyTemplate(template: IndustryTemplate): void {
     }
   }
   localStorage.setItem('bzhub_dashboard_prefs', JSON.stringify({ visibleKPIs, trendDays: 30 }))
+  // Set CSS custom properties for brand color
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--brand-color', template.color)
+    document.documentElement.style.setProperty('--brand-color-hover', template.colorHover)
+  }
+}
+
+export function initBrandColor(): void {
+  const template = getActiveTemplate()
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--brand-color', template.color)
+    document.documentElement.style.setProperty('--brand-color-hover', template.colorHover)
+  }
 }

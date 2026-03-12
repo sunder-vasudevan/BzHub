@@ -90,9 +90,9 @@ export default function AuditLogPage() {
           <div className="flex items-center gap-3">
             <div
               className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: "#6D28D920" }}
+              style={{ backgroundColor: "color-mix(in srgb, var(--brand-color) 12%, transparent)" }}
             >
-              <ClipboardCheck className="h-5 w-5" style={{ color: "#6D28D9" }} />
+              <ClipboardCheck className="h-5 w-5" style={{ color: "var(--brand-color)" }} />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Audit Log</h1>
@@ -158,7 +158,7 @@ export default function AuditLogPage() {
               <div className="flex items-center justify-center py-20">
                 <div
                   className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
-                  style={{ borderColor: "#6D28D9", borderTopColor: "transparent" }}
+                  style={{ borderColor: "var(--brand-color)", borderTopColor: "transparent" }}
                 />
               </div>
             ) : (
