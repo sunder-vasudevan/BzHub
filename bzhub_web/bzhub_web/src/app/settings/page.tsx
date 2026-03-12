@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { fetchCompanySettings, saveCompanySettings, fetchHealth } from "@/lib/db"
-import { Building2, User, Info, CheckCircle2, XCircle, Coins } from "lucide-react"
+import { Building2, User, Info, CheckCircle2, XCircle, Coins, LayoutTemplate } from "lucide-react"
+import { TEMPLATES, getActiveTemplate, applyTemplate, IndustryTemplate } from "@/lib/templates"
 
 const CURRENCIES = [
   { symbol: "₹", label: "Indian Rupee (₹)" },
@@ -50,10 +51,23 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState("₹")
   const [currencySaved, setCurrencySaved] = useState(false)
 
+  // Industry template state
+  const [activeTemplate, setActiveTemplate] = useState<IndustryTemplate>(() =>
+    typeof window !== 'undefined' ? getActiveTemplate() : TEMPLATES[0]
+  )
+  const [templateSaved, setTemplateSaved] = useState(false)
+
   useEffect(() => {
     const stored = localStorage.getItem("bzhub_currency")
     if (stored) setCurrency(stored)
   }, [])
+
+  function handleSelectTemplate(t: IndustryTemplate) {
+    applyTemplate(t)
+    setActiveTemplate(t)
+    setTemplateSaved(true)
+    setTimeout(() => setTemplateSaved(false), 3000)
+  }
 
   function handleSaveCurrency() {
     localStorage.setItem("bzhub_currency", currency)
@@ -260,6 +274,58 @@ export default function SettingsPage() {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Industry Template Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutTemplate className="h-4 w-4" style={{ color: "#6D28D9" }} />
+                Industry Template
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose a template to pre-configure your dashboard KPIs for your industry. You can still customise further from the Dashboard.
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {TEMPLATES.map((t) => {
+                  const isActive = activeTemplate.id === t.id
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => handleSelectTemplate(t)}
+                      className={`text-left rounded-lg border-2 p-4 transition-all hover:shadow-sm ${
+                        isActive ? "border-current" : "border-border hover:border-muted-foreground/50"
+                      }`}
+                      style={isActive ? { borderColor: t.color } : {}}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-medium text-sm">{t.name}</span>
+                        {isActive && (
+                          <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: t.color }} />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{t.description}</p>
+                      <ul className="space-y-1">
+                        {t.highlights.map((h) => (
+                          <li key={h} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="h-1 w-1 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
+                            {h}
+                          </li>
+                        ))}
+                      </ul>
+                    </button>
+                  )
+                })}
+              </div>
+              {templateSaved && (
+                <div className="flex items-center gap-2 mt-4 text-sm text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Template applied — dashboard KPIs updated
+                </div>
+              )}
             </CardContent>
           </Card>
 

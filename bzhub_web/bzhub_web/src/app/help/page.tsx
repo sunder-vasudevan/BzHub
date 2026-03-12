@@ -32,6 +32,7 @@ import {
   Download,
   Search,
   ClipboardCheck,
+  LayoutTemplate,
 } from "lucide-react"
 
 interface Section {
@@ -460,6 +461,30 @@ const sections: Section[] = [
       {
         heading: "Database Setup",
         text: "The audit log requires the audit_logs table in Supabase. Run the SQL in documentation/supabase_schema_v3.sql to create it.",
+      },
+    ],
+  },
+  {
+    id: "industry-templates",
+    icon: <LayoutTemplate className="h-5 w-5" />,
+    title: "Industry Templates",
+    badge: "New",
+    content: [
+      {
+        heading: "What Are Industry Templates?",
+        text: "Industry Templates pre-configure your BzHub dashboard and KPI defaults for your type of business. Instead of a generic setup, your dashboard shows the metrics that actually matter to your industry from day one.",
+      },
+      {
+        heading: "Available Templates",
+        text: "General Business — balanced setup for any SMB with all KPIs visible. Retail Store — focuses on Inventory Value, Sales, and Low Stock; hides CRM pipeline metrics. Medical Clinic — HR and staff focus; shows employee-related KPIs and hides inventory/pipeline by default. Restaurant / F&B — daily revenue and POS focus; hides pipeline value. Wholesale Distributor — full KPI set with CRM pipeline as the primary metric.",
+      },
+      {
+        heading: "How to Apply a Template",
+        text: "Go to Settings → Industry Template. Click the card for your industry. The template is applied immediately — your dashboard KPI visibility resets to the industry defaults. You can still customise individual KPI cards from the Dashboard using the Customize button.",
+      },
+      {
+        heading: "Can I Switch Templates Later?",
+        text: "Yes. Switching templates resets your dashboard KPI defaults to the new industry's preferences. Any manual customisations you've made will be overwritten by the new template defaults, but you can customise again from the Dashboard afterwards.",
       },
     ],
   },
