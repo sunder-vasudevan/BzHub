@@ -19,9 +19,9 @@ Use this file to store anything you want me to remember between sessions and pro
 - Repo: `/Users/scottvalentino/BzHub`
 - Web app: `bzhub_web/bzhub_web/`
 
-**Current version:** v4.9.0 (2026-03-12) — live on Vercel
+**Current version:** v4.9.1 (2026-03-12) — live on Vercel
 
-**Live modules:** Dashboard (incl. Smart Insights), Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads — table view with inline stage selector), Reports, Settings (incl. Industry Templates), Help, Employee Self-Service Portal
+**Live modules:** Dashboard (incl. Smart Insights), Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads — List / Kanban / Funnel views), Reports, Settings (incl. Industry Templates), Help, Employee Self-Service Portal
 
 **Known gap:** Login is hardcoded `admin/admin123` — no real auth yet (FEAT-036, planned Phase 3).
 
