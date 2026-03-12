@@ -706,6 +706,7 @@ export async function fetchHealth() {
 export interface Insight {
   id: string
   severity: 'warning' | 'info'
+  group: 'Inventory' | 'HR' | 'Operations' | 'Sales'
   message: string
   href?: string
 }
@@ -740,6 +741,7 @@ export async function fetchInsights(): Promise<Insight[]> {
           insights.push({
             id: `stock_critical_${item.item_name}`,
             severity: 'warning',
+            group: 'Inventory',
             message: `${item.item_name} will run out in ~${daysLeft} day${daysLeft === 1 ? '' : 's'} at current sales velocity`,
             href: '/operations',
           })
@@ -747,6 +749,7 @@ export async function fetchInsights(): Promise<Insight[]> {
           insights.push({
             id: `stock_low_${item.item_name}`,
             severity: 'info',
+            group: 'Inventory',
             message: `${item.item_name} has ~${daysLeft} days of stock remaining — consider reordering`,
             href: '/operations',
           })
@@ -763,6 +766,7 @@ export async function fetchInsights(): Promise<Insight[]> {
       insights.push({
         id: 'hr_pending_appraisals',
         severity: 'info',
+        group: 'HR',
         message: `${count} appraisal${count > 1 ? 's' : ''} awaiting manager review`,
         href: '/hr',
       })
@@ -781,6 +785,7 @@ export async function fetchInsights(): Promise<Insight[]> {
       insights.push({
         id: 'hr_overdue_goals',
         severity: 'warning',
+        group: 'HR',
         message: `${count} goal${count > 1 ? 's' : ''} past due date and not yet completed`,
         href: '/hr',
       })
@@ -799,6 +804,7 @@ export async function fetchInsights(): Promise<Insight[]> {
       insights.push({
         id: 'approvals_leave',
         severity: 'info',
+        group: 'HR',
         message: `${pendingLeave} leave request${pendingLeave > 1 ? 's' : ''} pending approval`,
         href: '/hr',
       })
@@ -807,6 +813,7 @@ export async function fetchInsights(): Promise<Insight[]> {
       insights.push({
         id: 'approvals_po',
         severity: 'info',
+        group: 'Operations',
         message: `${pendingPOs} purchase order${pendingPOs > 1 ? 's' : ''} pending approval`,
         href: '/operations',
       })
@@ -835,14 +842,14 @@ export async function fetchInsights(): Promise<Insight[]> {
       insights.push({
         id: 'sales_anomaly',
         severity: 'warning',
+        group: 'Sales',
         message: `This week's revenue is ${dropPct}% below your 3-week average — check for unusual patterns`,
         href: '/reports',
       })
     }
   } catch {}
 
-  // Warnings first, max 6
+  // Warnings first within each group
   return insights
     .sort((a, b) => (a.severity === 'warning' ? -1 : 1) - (b.severity === 'warning' ? -1 : 1))
-    .slice(0, 6)
 }

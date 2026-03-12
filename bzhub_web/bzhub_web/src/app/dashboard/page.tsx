@@ -390,48 +390,71 @@ export default function DashboardPage() {
             </div>
 
             {/* AI Insights */}
-            {insights.length > 0 && (
-              <Card className="mb-6">
-                <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => setInsightsOpen(o => !o)}>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
-                      Smart Insights
-                      <span className="ml-1 text-xs font-normal text-muted-foreground">
-                        {insights.filter(i => i.severity === 'warning').length > 0 && (
-                          <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
-                            {insights.filter(i => i.severity === 'warning').length} action{insights.filter(i => i.severity === 'warning').length > 1 ? 's' : ''} needed
+            {insights.length > 0 && (() => {
+              const GROUP_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+                Inventory:  { label: 'Inventory',  icon: '📦', color: '#0EA5E9' },
+                HR:         { label: 'HR',          icon: '👥', color: '#8B5CF6' },
+                Operations: { label: 'Operations',  icon: '⚙️', color: '#F59E0B' },
+                Sales:      { label: 'Sales',       icon: '📈', color: '#10B981' },
+              }
+              const groups = ['Inventory', 'HR', 'Operations', 'Sales'] as const
+              const warningCount = insights.filter(i => i.severity === 'warning').length
+              return (
+                <Card className="mb-6">
+                  <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => setInsightsOpen(o => !o)}>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
+                        Smart Insights
+                        {warningCount > 0 && (
+                          <span className="text-xs font-medium text-amber-600">
+                            · {warningCount} action{warningCount > 1 ? 's' : ''} needed
                           </span>
                         )}
-                      </span>
-                    </CardTitle>
-                    {insightsOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                </CardHeader>
-                {insightsOpen && (
-                  <CardContent className="pt-0">
-                    <ul className="space-y-2">
-                      {insights.map((insight) => (
-                        <li key={insight.id} className="flex items-start gap-2.5">
-                          <span
-                            className="mt-0.5 h-2 w-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: insight.severity === 'warning' ? '#F59E0B' : '#6B7280', marginTop: '6px' }}
-                          />
-                          <span className="text-sm text-foreground flex-1">
-                            {insight.message}
-                            {insight.href && (
-                              <Link href={insight.href} className="ml-2 text-xs underline underline-offset-2" style={{ color: "var(--brand-color)" }}>
-                                View →
-                              </Link>
-                            )}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                )}
-              </Card>
-            )}
+                      </CardTitle>
+                      {insightsOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </CardHeader>
+                  {insightsOpen && (
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {groups.map((group) => {
+                          const groupInsights = insights.filter(i => i.group === group)
+                          if (groupInsights.length === 0) return null
+                          const cfg = GROUP_CONFIG[group]
+                          return (
+                            <div key={group} className="rounded-lg border border-border p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-base leading-none">{cfg.icon}</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: cfg.color }}>{cfg.label}</span>
+                              </div>
+                              <ul className="space-y-1.5">
+                                {groupInsights.map((insight) => (
+                                  <li key={insight.id} className="flex items-start gap-2">
+                                    <span
+                                      className="h-1.5 w-1.5 rounded-full flex-shrink-0 mt-1.5"
+                                      style={{ backgroundColor: insight.severity === 'warning' ? '#F59E0B' : '#94A3B8' }}
+                                    />
+                                    <span className="text-xs text-foreground flex-1 leading-relaxed">
+                                      {insight.message}
+                                      {insight.href && (
+                                        <Link href={insight.href} className="ml-1.5 underline underline-offset-2 font-medium" style={{ color: cfg.color }}>
+                                          View →
+                                        </Link>
+                                      )}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              )
+            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Fast Movers */}
