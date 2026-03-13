@@ -64,6 +64,10 @@ import {
 import type { Goal, Appraisal, Skill, EmployeeSkill, LeaveRequest } from "@/lib/db"
 import { Plus, Users, DollarSign, Target, Star, Zap, CalendarDays, Check, X, Download } from "lucide-react"
 import { downloadCSV } from "@/lib/export"
+import { Separator } from "@/components/ui/separator"
+import CustomFieldRenderer from "@/components/CustomFieldRenderer"
+import { getEntityFields } from "@/lib/customFields"
+import { fetchCustomData, upsertCustomData } from "@/lib/db"
 
 type Tab = "employees" | "payroll" | "goals" | "appraisals" | "skills" | "leave"
 
@@ -117,6 +121,7 @@ function EmployeesTab() {
   const [error, setError] = useState("")
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState<Employee | null>(null)
+  const customFields = getEntityFields('employee')
 
   const load = useCallback(async () => {
     try {
@@ -146,7 +151,11 @@ function EmployeesTab() {
     }
   }
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>, employeeId?: number) {
+  async function handleSave(
+    e: React.FormEvent<HTMLFormElement>,
+    employeeId: number | undefined,
+    customValues: Record<string, unknown>
+  ) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     const data = {
@@ -157,14 +166,18 @@ function EmployeesTab() {
       phone: fd.get("phone") as string,
     }
     try {
+      let savedId = employeeId
       if (employeeId) {
         await updateEmployee(employeeId, data)
         setEditing(null)
         toast("Employee updated", "success")
       } else {
-        await createEmployee(data)
+        savedId = await createEmployee(data)
         setShowAdd(false)
         toast("Employee added", "success")
+      }
+      if (customFields.length > 0 && savedId) {
+        await upsertCustomData('employee', String(savedId), customValues)
       }
       await load()
     } catch (e: unknown) {
@@ -179,8 +192,16 @@ function EmployeesTab() {
   }
 
   function EmployeeForm({ emp, onClose }: { emp?: Employee; onClose: () => void }) {
+    const [customValues, setCustomValues] = useState<Record<string, unknown>>({})
+
+    useEffect(() => {
+      if (emp) {
+        fetchCustomData('employee', String(emp.id)).then(setCustomValues)
+      }
+    }, [emp])
+
     return (
-      <form onSubmit={(e) => handleSave(e, emp?.id)}>
+      <form onSubmit={(e) => handleSave(e, emp?.id, customValues)}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
           <div className="col-span-2 space-y-1.5">
             <Label htmlFor="name">Full Name *</Label>
@@ -202,6 +223,19 @@ function EmployeesTab() {
             <Label htmlFor="phone">Phone</Label>
             <Input name="phone" defaultValue={emp?.phone} placeholder="+1 555 000 0000" />
           </div>
+          {customFields.length > 0 && (
+            <div className="col-span-2 space-y-3">
+              <Separator />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Custom Fields
+              </p>
+              <CustomFieldRenderer
+                fields={customFields}
+                values={customValues}
+                onChange={(id, val) => setCustomValues(prev => ({ ...prev, [id]: val }))}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild>

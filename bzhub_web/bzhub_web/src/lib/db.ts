@@ -129,10 +129,11 @@ export async function fetchEmployees() {
   return data ?? []
 }
 
-export async function createEmployee(item: Record<string, unknown>) {
+export async function createEmployee(item: Record<string, unknown>): Promise<number> {
   const { data, error } = await supabase.from('employees').insert([item]).select('id').single()
   if (error) throw new Error(error.message)
   logAudit({ table_name: 'employees', record_id: String(data?.id ?? ''), action: 'create', summary: `Created employee: ${item.name ?? ''}` })
+  return data?.id as number
 }
 
 export async function updateEmployee(id: number, updates: Record<string, unknown>) {
@@ -852,4 +853,42 @@ export async function fetchInsights(): Promise<Insight[]> {
   // Warnings first within each group
   return insights
     .sort((a, b) => (a.severity === 'warning' ? -1 : 1) - (b.severity === 'warning' ? -1 : 1))
+}
+
+// ---- Custom Field Data ----
+// Stores per-record values for admin-defined custom fields.
+// Requires the `custom_data` table — see migrations/001_custom_data.sql.
+// Fails silently if the table doesn't exist yet.
+
+export async function fetchCustomData(
+  entityType: string,
+  entityId: string
+): Promise<Record<string, unknown>> {
+  try {
+    const { data, error } = await supabase
+      .from('custom_data')
+      .select('data')
+      .eq('entity_type', entityType)
+      .eq('entity_id', entityId)
+      .single()
+    if (error) return {}
+    return (data?.data as Record<string, unknown>) ?? {}
+  } catch {
+    return {}
+  }
+}
+
+export async function upsertCustomData(
+  entityType: string,
+  entityId: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  try {
+    await supabase.from('custom_data').upsert(
+      [{ entity_type: entityType, entity_id: entityId, data, updated_at: new Date().toISOString() }],
+      { onConflict: 'entity_type,entity_id' }
+    )
+  } catch {
+    // Silently fail — table may not exist yet
+  }
 }

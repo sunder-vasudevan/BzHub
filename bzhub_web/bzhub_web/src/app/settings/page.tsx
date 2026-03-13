@@ -14,8 +14,237 @@ import {
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { fetchCompanySettings, saveCompanySettings, fetchHealth } from "@/lib/db"
-import { Building2, User, Info, CheckCircle2, XCircle, Coins, LayoutTemplate } from "lucide-react"
+import { Building2, User, Info, CheckCircle2, XCircle, Coins, LayoutTemplate, Sliders, Plus, Trash2 } from "lucide-react"
 import { TEMPLATES, getActiveTemplate, applyTemplate, IndustryTemplate } from "@/lib/templates"
+import {
+  loadCustomFields,
+  saveCustomFields,
+  labelToId,
+  ENTITY_LABELS,
+  FIELD_TYPE_LABELS,
+  type EntityType,
+  type FieldType,
+  type CustomField,
+  type CustomFieldSchema,
+} from "@/lib/customFields"
+
+const ENTITY_TYPES: EntityType[] = ['employee', 'contact', 'lead', 'product']
+const FIELD_TYPES: FieldType[] = ['text', 'number', 'date', 'boolean', 'dropdown', 'email', 'phone', 'url']
+
+function CustomFieldsCard() {
+  const [schema, setSchema] = useState<CustomFieldSchema>(() => loadCustomFields())
+  const [activeEntity, setActiveEntity] = useState<EntityType>('employee')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newLabel, setNewLabel] = useState('')
+  const [newType, setNewType] = useState<FieldType>('text')
+  const [newRequired, setNewRequired] = useState(false)
+  const [newOptions, setNewOptions] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  const fields = schema[activeEntity] ?? []
+
+  function handleAddField() {
+    if (!newLabel.trim()) return
+    const id = labelToId(newLabel)
+    if (fields.some(f => f.id === id)) {
+      alert(`A field with id "${id}" already exists on this entity.`)
+      return
+    }
+    const field: CustomField = {
+      id,
+      label: newLabel.trim(),
+      type: newType,
+      required: newRequired,
+      options: newType === 'dropdown'
+        ? newOptions.split(',').map(s => s.trim()).filter(Boolean)
+        : undefined,
+    }
+    const updated = { ...schema, [activeEntity]: [...fields, field] }
+    setSchema(updated)
+    saveCustomFields(updated)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+    setShowAddForm(false)
+    setNewLabel('')
+    setNewType('text')
+    setNewRequired(false)
+    setNewOptions('')
+  }
+
+  function handleDelete(id: string) {
+    const updated = { ...schema, [activeEntity]: fields.filter(f => f.id !== id) }
+    setSchema(updated)
+    saveCustomFields(updated)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Sliders className="h-4 w-4" style={{ color: "var(--brand-color)" }} />
+          Custom Fields
+          {saved && (
+            <span className="ml-auto text-xs text-emerald-600 flex items-center gap-1 font-normal">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">
+          Add extra fields to any entity. They appear in the add/edit forms for that module.
+        </p>
+
+        {/* Entity tabs */}
+        <div className="flex gap-1 mb-4 flex-wrap">
+          {ENTITY_TYPES.map(et => (
+            <button
+              key={et}
+              onClick={() => { setActiveEntity(et); setShowAddForm(false) }}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                activeEntity === et
+                  ? 'text-white'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+              }`}
+              style={activeEntity === et ? { backgroundColor: 'var(--brand-color)' } : {}}
+            >
+              {ENTITY_LABELS[et]}
+            </button>
+          ))}
+        </div>
+
+        {/* Field list */}
+        {fields.length === 0 && !showAddForm && (
+          <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-lg">
+            No custom fields for {ENTITY_LABELS[activeEntity]} yet
+          </p>
+        )}
+        {fields.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {fields.map(field => (
+              <div
+                key={field.id}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/30"
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium">{field.label}</span>
+                  {field.required && (
+                    <span className="text-destructive text-xs ml-1">*</span>
+                  )}
+                </div>
+                <Badge variant="secondary" className="text-xs shrink-0">
+                  {FIELD_TYPE_LABELS[field.type]}
+                </Badge>
+                {field.type === 'dropdown' && field.options?.length && (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {field.options.length} options
+                  </span>
+                )}
+                <button
+                  onClick={() => handleDelete(field.id)}
+                  className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                  title="Remove field"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add field form */}
+        {showAddForm ? (
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              New field — {ENTITY_LABELS[activeEntity]}
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Field Label *</Label>
+              <Input
+                value={newLabel}
+                onChange={e => setNewLabel(e.target.value)}
+                placeholder="e.g. Blood Type"
+                autoFocus
+              />
+              {newLabel && (
+                <p className="text-xs text-muted-foreground">
+                  Key: <code className="bg-muted px-1 rounded">{labelToId(newLabel)}</code>
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Field Type</Label>
+                <select
+                  value={newType}
+                  onChange={e => setNewType(e.target.value as FieldType)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                >
+                  {FIELD_TYPES.map(t => (
+                    <option key={t} value={t}>{FIELD_TYPE_LABELS[t]}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Required?</Label>
+                <div className="flex items-center gap-2 h-9">
+                  <input
+                    type="checkbox"
+                    id="cf_required"
+                    checked={newRequired}
+                    onChange={e => setNewRequired(e.target.checked)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <Label htmlFor="cf_required" className="text-sm cursor-pointer">Required field</Label>
+                </div>
+              </div>
+            </div>
+            {newType === 'dropdown' && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Options (comma-separated)</Label>
+                <Input
+                  value={newOptions}
+                  onChange={e => setNewOptions(e.target.value)}
+                  placeholder="e.g. A+, B+, O+, AB+"
+                />
+              </div>
+            )}
+            <div className="flex gap-2 pt-1">
+              <Button
+                size="sm"
+                onClick={handleAddField}
+                disabled={!newLabel.trim()}
+                style={{ backgroundColor: "var(--brand-color)" }}
+                className="text-white hover:opacity-90"
+              >
+                Add Field
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setShowAddForm(false); setNewLabel(''); setNewType('text'); setNewRequired(false); setNewOptions('') }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowAddForm(true)}
+            className="gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            Add Field
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 const CURRENCIES = [
   { symbol: "₹", label: "Indian Rupee (₹)" },
@@ -328,6 +557,9 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Custom Fields Card */}
+          <CustomFieldsCard />
 
           {/* Current User Card */}
           <Card>
