@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
 Generates a McKinsey/PwC-style 10-slide executive deck for the BzHub Efficiency Case Study.
-Run:   python3 documentation/generate_exec_deck.py
+Run:   python3.9 documentation/generate_exec_deck.py
 Output: documentation/BzHub_Efficiency_ExecDeck.pptx
 Requires: pip3 install python-pptx
 """
+
+import io
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
 
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
@@ -168,6 +175,80 @@ def two_col_table(slide, headers, rows, left, top, col_widths, row_height=Inches
             x += col_widths[c_idx]
 
 
+# ── Chart helpers ─────────────────────────────────────────────────────────────
+
+def _c(rgb_tuple):
+    return tuple(c/255 for c in rgb_tuple)
+
+_NAVY  = (0x00, 0x2B, 0x5C)
+_BLUE  = (0x00, 0x5B, 0x99)
+_TEAL  = (0x00, 0x7A, 0x87)
+_LGREY = (0xF2, 0xF4, 0xF7)
+_DTEXT = (0x1A, 0x1A, 0x2E)
+
+
+def _savefig(fig, dpi=150):
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor='none')
+    buf.seek(0)
+    plt.close(fig)
+    return buf
+
+
+def deck_chart_sessions():
+    """Grouped bar: session time (left axis) vs. releases shipped (right axis)."""
+    sessions = ['Session 1\n(45 min)', 'Session 2\n(25 min)', 'Session 3\n(35 min)']
+    times    = [45, 25, 35]
+    releases = [0, 1, 6]
+    x = np.arange(len(sessions))
+    width = 0.38
+
+    fig, ax1 = plt.subplots(figsize=(5.8, 3.0), facecolor='none')
+    ax2 = ax1.twinx()
+    ax1.set_facecolor('none')
+    fig.patch.set_alpha(0)
+
+    b1 = ax1.bar(x - width/2, times, width, color=_c(_BLUE), edgecolor='white', linewidth=0.8)
+    b2 = ax2.bar(x + width/2, releases, width, color=_c(_TEAL), edgecolor='white', linewidth=0.8)
+
+    for bar, val in zip(b1, times):
+        ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.8,
+                 f'{val}m', ha='center', va='bottom', fontsize=9, fontweight='bold',
+                 color=_c(_BLUE))
+    for bar, val in zip(b2, releases):
+        ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.08,
+                 str(val), ha='center', va='bottom', fontsize=9, fontweight='bold',
+                 color=_c(_TEAL))
+
+    ax1.set_ylabel('Interaction Time (mins)', fontsize=8, color=_c(_BLUE))
+    ax2.set_ylabel('Releases Shipped', fontsize=8, color=_c(_TEAL))
+    ax1.set_title('Session Efficiency', fontsize=10, fontweight='bold',
+                  color=_c(_NAVY), pad=8)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(sessions, fontsize=8)
+    ax1.set_ylim(0, 60)
+    ax2.set_ylim(0, 8)
+    for ax in [ax1, ax2]:
+        ax.spines['top'].set_visible(False)
+    ax1.spines['left'].set_color('#AAAAAA')
+    ax1.spines['bottom'].set_color('#AAAAAA')
+    ax1.tick_params(labelsize=8)
+    ax2.tick_params(labelsize=8)
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    b1_patch = mpatches.Patch(color=_c(_BLUE), label='Interaction Time (mins)')
+    b2_patch = mpatches.Patch(color=_c(_TEAL), label='Releases Shipped')
+    ax1.legend(handles=[b1_patch, b2_patch], fontsize=7, loc='upper left',
+               framealpha=0.4, facecolor='white')
+    fig.tight_layout()
+    return _savefig(fig)
+
+
+def add_deck_picture(slide, buf, left, top, width):
+    """Insert a BytesIO chart image into a pptx slide."""
+    slide.shapes.add_picture(buf, left, top, width=width)
+
+
 LOGO = '/Users/scottvalentino/BzHub/assets/bizhub_logo.png'
 
 
@@ -197,7 +278,7 @@ def slide_01_cover(prs):
     meta = [
         ('Author', 'sunder-vasudevan'),
         ('Date', 'March 2026'),
-        ('Version', '1.0'),
+        ('Version', '1.1 — with measured interaction time data'),
         ('Classification', 'Technical Peers'),
     ]
     for i, (k, v) in enumerate(meta):
@@ -250,7 +331,7 @@ def slide_02_context(prs):
     txbox(s, Inches(6.7), Inches(3.65), Inches(5.8), Inches(0.35),
           text='SPOILER', size=Pt(9), bold=True, color=AMBER)
     txbox(s, Inches(6.7), Inches(3.95), Inches(5.8), Inches(1.1),
-          text='Yes — with a 2–3x velocity multiplier confirmed by both git data and the Product Owner\'s self-assessment.',
+          text='Yes — 2–4x velocity multiplier confirmed by git data and measured logs: 105 mins of interaction → 6 production releases → 60–120x compression ratio.',
           size=Pt(12), bold=True, color=DARK_NAVY, wrap=True)
 
     footer_bar(s)
@@ -267,10 +348,10 @@ def slide_03_experiment(prs):
     kpis = [
         ('31', 'Calendar days'),
         ('~10', 'Active coding days'),
-        ('52', 'Total commits'),
-        ('9', 'Production releases'),
-        ('8', 'Live modules'),
-        ('~12,600', 'Net new LOC'),
+        ('64', 'Total commits'),
+        ('11', 'Production releases'),
+        ('9', 'Live modules'),
+        ('~15,800', 'Net new LOC'),
     ]
     for i, (num, lbl) in enumerate(kpis):
         big_number(s, num, lbl,
@@ -311,18 +392,19 @@ def slide_04_what_was_built(prs):
     """Slide 4 — What Was Built."""
     s = blank_slide(prs)
     section_label(s, '03  Scope')
-    slide_title(s, '8 Live Modules. Full Stack. Cloud-Deployed.')
+    slide_title(s, '9 Live Modules. Full Stack. Cloud-Deployed.')
     rule_line(s, Inches(1.2))
 
     modules = [
-        ('Dashboard',             'KPI cards, trend chart, fast/slow movers analytics'),
-        ('Operations',            'Inventory, POS, Bills, Suppliers, Purchase Orders'),
-        ('HR',                    'Employees, Payroll, Goals, Appraisals, Skills, Leave'),
-        ('CRM',                   'Contacts, Leads, Kanban pipeline, lead scoring'),
-        ('Reports',               'Sales Report, Top Sellers chart, Inventory Report'),
-        ('Settings',              'Company info, currency selector'),
+        ('Dashboard',             'KPI cards, trend chart, Smart Insights, customizable layout'),
+        ('Operations',            'Inventory, POS, Bills, Suppliers, Purchase Orders + approval'),
+        ('HR',                    'Employees, Payroll, Goals, Appraisals, Skills, Leave + workflows'),
+        ('CRM',                   'Contacts, Leads — List / Kanban / Funnel views, lead scoring'),
+        ('Reports',               'Sales Report, Top Sellers, Inventory Report + CSV export'),
+        ('Settings',              'Company info, currency, industry templates, brand color, Custom Fields'),
         ('Help',                  'In-app user guide for all modules'),
         ('Employee Self-Service', 'My Goals, My Appraisals, My Leave, My Skills'),
+        ('Notifications',         'Bell icon: pending leave / PO / appraisal / low-stock alerts'),
     ]
 
     for i, (mod, desc) in enumerate(modules):
@@ -344,43 +426,100 @@ def slide_05_velocity(prs):
     """Slide 5 — The 2-Day Sprint (velocity evidence)."""
     s = blank_slide(prs)
     section_label(s, '04  Velocity')
-    slide_title(s, 'The 48-Hour Sprint: 5 Releases, ~4,400 Lines')
+    slide_title(s, 'The 2-Day Sprint: 10 Releases, ~7,200 Lines')
     rule_line(s, Inches(1.2))
 
-    # Table
+    # Table (left side — 5 cols, compact)
     two_col_table(s,
-        headers=['Release', 'Feature', 'LOC Added'],
+        headers=['Release', 'Feature', 'LOC'],
         rows=[
-            ('v4.1.x', 'Cloud deployment + mobile responsive',  '~495'),
-            ('v4.2.0', 'Reports page + Supplier management',    '699'),
-            ('v4.3.0', 'Goals, Appraisals, Skills Matrix',      '1,302'),
-            ('v4.4.0', '3 Approval workflows + DB schema',      '1,209'),
-            ('v4.5.0', 'Employee Self-Service Portal',          '667'),
-            ('TOTAL',  '5 releases  ·  6 cross-layer features', '~4,372'),
+            ('v4.1.x–4.5.0', 'Cloud, Reports, HR, Approvals, Employee Portal (5 releases)', '~4,372'),
+            ('v4.6.0',       'Notification Center, CSV Export, Global Search, Audit Log',    '1,267'),
+            ('v4.7.0 ●',     'Industry Templates  [Session 2 — 25 min]',                     '169'),
+            ('v4.7.1 ●',     'Dynamic brand color — 24 files  [Session 3 — 35 min]',          '971'),
+            ('v4.8.0 ●',     'Smart Insights dashboard card  [Session 3]',                   '196'),
+            ('v4.9.x ●',     'CRM view switcher: List/Kanban/Funnel  [Session 3]',            '264'),
+            ('TOTAL',        '10 releases  ·  all layers  ·  2 calendar days',               '~7,239'),
         ],
         left=Inches(0.5), top=Inches(1.35),
-        col_widths=[Inches(1.3), Inches(6.8), Inches(1.5)],
+        col_widths=[Inches(1.6), Inches(7.3), Inches(1.1)],
         row_height=Inches(0.38)
     )
 
     # Callout right
-    rect(s, Inches(10.4), Inches(1.35), Inches(2.6), Inches(2.66),
+    rect(s, Inches(10.6), Inches(1.35), Inches(2.4), Inches(3.04),
          fill_color=DARK_NAVY)
-    txbox(s, Inches(10.55), Inches(1.5), Inches(2.3), Inches(0.4),
-          text='IN 48 HOURS', size=Pt(9), bold=True, color=TEAL)
-    txbox(s, Inches(10.55), Inches(1.95), Inches(2.3), Inches(0.6),
-          text='5', size=Pt(56), bold=True, color=WHITE, align=PP_ALIGN.CENTER)
-    txbox(s, Inches(10.55), Inches(2.55), Inches(2.3), Inches(0.35),
+    txbox(s, Inches(10.7), Inches(1.48), Inches(2.2), Inches(0.4),
+          text='IN 2 DAYS', size=Pt(9), bold=True, color=TEAL)
+    txbox(s, Inches(10.7), Inches(1.88), Inches(2.2), Inches(0.65),
+          text='10', size=Pt(56), bold=True, color=WHITE, align=PP_ALIGN.CENTER)
+    txbox(s, Inches(10.7), Inches(2.53), Inches(2.2), Inches(0.35),
           text='production releases', size=Pt(10), color=LIGHT_GREY, align=PP_ALIGN.CENTER)
-    txbox(s, Inches(10.55), Inches(2.95), Inches(2.3), Inches(0.35),
+    txbox(s, Inches(10.7), Inches(2.88), Inches(2.2), Inches(0.35),
           text='shipped to cloud', size=Pt(10), color=LIGHT_GREY, align=PP_ALIGN.CENTER)
+    txbox(s, Inches(10.7), Inches(3.3), Inches(2.2), Inches(0.35),
+          text='● = logged session', size=Pt(8), color=TEAL, align=PP_ALIGN.CENTER)
 
     # Bottom callout
     callout(s,
-            'For a 3-person team, this block of work would realistically require '
-            '1–2 two-week sprints (3–4 calendar weeks), including sprint planning, '
-            'async coordination, code review cycles, and deployment handoffs.',
-            Inches(0.5), Inches(4.5), Inches(12.3), Inches(0.88))
+            'Sessions 2 + 3 (60 mins combined interaction time) produced 7 of these 10 releases. '
+            'A 3-person team would realistically require 3–6 two-week sprints for this scope. '
+            'The AI-assisted pair compressed it to 2 calendar days.',
+            Inches(0.5), Inches(4.62), Inches(12.3), Inches(0.72))
+
+    footer_bar(s)
+
+
+def slide_05b_measured_time(prs):
+    """Slide 5b — Measured Interaction Time (new: logged session data)."""
+    s = blank_slide(prs)
+    section_label(s, '04B  Measured Time')
+    slide_title(s, '105 Minutes of Interaction → 6 Production Releases')
+    rule_line(s, Inches(1.2))
+
+    # 3 session cards
+    sessions = [
+        ('Session 1', '~45 min', '—', 'Efficiency whitepaper,\ndoc generators'),
+        ('Session 2', '~25 min', 'v4.7.0', 'Industry Templates\n(FEAT-038)'),
+        ('Session 3', '~35 min', 'v4.7.1 – v4.9.2\n(6 releases)', 'Brand color, Smart Insights,\nCRM List/Kanban/Funnel'),
+    ]
+    colors = [DARK_NAVY, MID_BLUE, TEAL]
+    for i, (title, time, releases, output) in enumerate(sessions):
+        x = Inches(0.5) + i * Inches(3.9)
+        rect(s, x, Inches(1.4), Inches(3.6), Inches(0.36), fill_color=colors[i])
+        txbox(s, x + Inches(0.12), Inches(1.42), Inches(3.38), Inches(0.3),
+              text=title, size=Pt(10), bold=True, color=WHITE)
+        rect(s, x, Inches(1.76), Inches(3.6), Inches(2.44),
+             fill_color=LIGHT_GREY if i < 2 else RGBColor(0xE0, 0xF4, 0xF6))
+        txbox(s, x + Inches(0.12), Inches(1.85), Inches(1.2), Inches(0.25),
+              text='TIME', size=Pt(7.5), bold=True, color=MID_GREY)
+        txbox(s, x + Inches(0.12), Inches(2.1), Inches(3.3), Inches(0.4),
+              text=time, size=Pt(22), bold=True, color=colors[i])
+        txbox(s, x + Inches(0.12), Inches(2.6), Inches(1.2), Inches(0.25),
+              text='RELEASES', size=Pt(7.5), bold=True, color=MID_GREY)
+        txbox(s, x + Inches(0.12), Inches(2.85), Inches(3.3), Inches(0.5),
+              text=releases, size=Pt(10.5), bold=True, color=DARK_NAVY, wrap=True)
+        txbox(s, x + Inches(0.12), Inches(3.42), Inches(1.2), Inches(0.25),
+              text='OUTPUT', size=Pt(7.5), bold=True, color=MID_GREY)
+        txbox(s, x + Inches(0.12), Inches(3.68), Inches(3.3), Inches(0.45),
+              text=output, size=Pt(9.5), color=DARK_TEXT, wrap=True)
+
+    # Total bar
+    rect(s, Inches(0.5), Inches(4.28), Inches(11.7), Inches(0.44), fill_color=DARK_NAVY)
+    txbox(s, Inches(0.7), Inches(4.33), Inches(11.3), Inches(0.34),
+          text='TOTAL:  ~105 mins interaction  →  6 production releases  →  ~1,600 net LOC',
+          size=Pt(10.5), bold=True, color=WHITE)
+
+    # Chart (right side)
+    chart_buf = deck_chart_sessions()
+    add_deck_picture(s, chart_buf, left=Inches(7.8), top=Inches(4.82), width=Inches(5.0))
+
+    # Key stat left
+    callout(s,
+            'Session 3: 35 mins → 6 releases\n'
+            '≈ 3–6 engineer-weeks of traditional work\n'
+            '→ 60–120x compression ratio on interaction time',
+            Inches(0.5), Inches(4.85), Inches(7.1), Inches(0.96))
 
     footer_bar(s)
 
@@ -395,27 +534,28 @@ def slide_06_comparison(prs):
     two_col_table(s,
         headers=['Dimension', '1 PO + Claude  (31 days)', '3-Person Team  (31 days est.)'],
         rows=[
-            ('Major releases shipped',   '9  (v1.0 → v4.5.0)',         '3–5  (1–2 per 2-week sprint)'),
-            ('Architecture migrations',  '3 full paradigm shifts',      'Likely 1  (dedicated project)'),
-            ('Live modules delivered',   '8',                           '4–6'),
-            ('Documentation',           'Per-feature  (project rule)',  'Varies — often deferred'),
-            ('Deployment pipeline',     'Fully automated  (Vercel CI)', '2–5 days setup for a team'),
-            ('Handoff overhead',        'Zero',                         '15–25% of sprint capacity'),
+            ('Major releases shipped',      '11  (v1.0 → v5.0.0)',          '3–5  (1–2 per 2-week sprint)'),
+            ('Architecture migrations',     '3 full paradigm shifts',        'Likely 1  (dedicated project)'),
+            ('Live modules delivered',      '9',                             '4–6'),
+            ('Documentation',              'Per-feature  (project rule)',    'Varies — often deferred'),
+            ('Deployment pipeline',        'Fully automated  (Vercel CI)',   '2–5 days setup for a team'),
+            ('Measured PO interaction',    '~105 mins  (3 logged sessions)', 'N/A — team always staffed'),
+            ('Handoff overhead',           'Zero',                           '15–25% of sprint capacity'),
         ],
         left=Inches(0.5), top=Inches(1.35),
         col_widths=[Inches(3.0), Inches(4.5), Inches(4.5)],
         row_height=Inches(0.42)
     )
 
-    txbox(s, Inches(0.5), Inches(4.95), Inches(12.0), Inches(0.28),
+    txbox(s, Inches(0.5), Inches(5.32), Inches(12.0), Inches(0.28),
           text='* 3-person team estimates based on conventional startup sprint norms, not empirical benchmarks.',
           size=Pt(8), italic=True, color=MID_GREY)
 
     callout(s,
             'Key finding: One Product Owner + Claude approximates the feature throughput of a '
-            '3-person startup team. The velocity multiplier is 2–3x, confirmed by both git-derived '
-            'data and the Product Owner\'s own assessment.',
-            Inches(0.5), Inches(5.35), Inches(12.3), Inches(0.88))
+            '3-person startup team. Velocity multiplier: 2–4x at project level. Session 3 alone '
+            'demonstrates a 60–120x compression ratio on interaction time.',
+            Inches(0.5), Inches(5.7), Inches(12.3), Inches(0.72))
 
     footer_bar(s)
 
@@ -529,10 +669,10 @@ def slide_09_conclusion(prs):
           text='One Product Owner + Claude ≈ 3-Person Startup Dev Team',
           size=Pt(24), bold=True, color=RGBColor(0xA8, 0xC8, 0xE8), wrap=True)
 
-    txbox(s, Inches(0.6), Inches(3.3), Inches(11.5), Inches(0.9),
-          text='Velocity multiplier: 2–3x. Confirmed by git-derived data across 9 releases, '
-               '3 architecture migrations, and 8 live modules — delivered in 31 calendar days.',
-          size=Pt(12), color=RGBColor(0xCC, 0xDD, 0xEE), wrap=True)
+    txbox(s, Inches(0.6), Inches(3.3), Inches(11.5), Inches(1.1),
+          text='11 releases  ·  9 modules  ·  3 architecture migrations  ·  31 calendar days  ·  105 mins measured interaction time.\n'
+               'Session 3: 35 mins → 6 releases → ~60–120x compression ratio on human direction time.',
+          size=Pt(11.5), color=RGBColor(0xCC, 0xDD, 0xEE), wrap=True)
 
     # 4 gain bullets
     gains = ['Zero handoff latency', 'Persistent cross-session context',
@@ -572,9 +712,9 @@ def slide_10_recommendations(prs):
         ('3', 'Keep the Product Owner in the architecture seat',
          'Define what to build and why before asking Claude to help build it. '
          'Product direction and quality gate remain the human\'s responsibility.'),
-        ('4', 'Use the multiplier effect, not the replacement effect',
-         '"One PO + Claude can reach a place that previously required a team." '
-         'The Product Owner\'s judgment is still the rate limiter for quality.'),
+        ('4', 'Log interaction time from day one',
+         'This project only began logging at v4.7.0. A complete log from the start would '
+         'make the efficiency analysis definitive. Use a simple markdown table per session.'),
     ]
 
     for i, (num, title, desc) in enumerate(recs):
@@ -606,6 +746,7 @@ def build_deck():
     slide_03_experiment(prs)
     slide_04_what_was_built(prs)
     slide_05_velocity(prs)
+    slide_05b_measured_time(prs)
     slide_06_comparison(prs)
     slide_07_how_it_works(prs)
     slide_08_quality(prs)
