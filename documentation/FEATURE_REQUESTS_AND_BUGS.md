@@ -976,6 +976,128 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 
 ---
 
+### FEAT-041 — Customizable SaaS Platform (Custom Fields + Module Builder)
+- **Status:** Partial Done — Phase 2.5a shipped (v5.0.0); 2.5b (Module Builder) and 2.5c (Nav Config) pending
+- **Date:** 2026-03-13
+- **Priority:** High
+- **Target Phase:** Phase 2.5 — SaaS Extensibility
+- **Summary:** Allow customers to extend BzHub without code — add custom fields to existing entities and build entirely new record-type modules via a schema UI. This is the foundation of the "customizable SaaS" architecture.
+
+#### Problem It Solves
+Every SMB has unique data needs. A clinic needs a "Referring Doctor" field on patients. A distributor needs a "Route" field on customers. Today they can't add these — BzHub is rigid. This feature makes BzHub extensible without requiring code or a developer.
+
+#### What It Does NOT Do (Scope Boundary)
+- No formula engine or computed fields (Phase 3+)
+- No drag-and-drop workflow builder (Phase 4)
+- No third-party plugin marketplace (Phase 5)
+- No cross-module relational fields in V1
+
+---
+
+#### Architecture
+
+**Supabase Schema (3 new tables):**
+
+```sql
+-- Defines custom fields attached to an entity type
+entity_custom_fields (
+  id uuid PRIMARY KEY,
+  org_id uuid,            -- multi-tenant ready
+  entity_type text,       -- 'employee' | 'contact' | 'lead' | 'product' | 'invoice'
+  fields jsonb,           -- [{name, label, type, required, options[], order}]
+  updated_at timestamptz
+)
+
+-- Defines entirely new custom modules (record types)
+custom_modules (
+  id uuid PRIMARY KEY,
+  org_id uuid,
+  slug text,              -- url-safe name, e.g. 'projects'
+  label text,             -- display name, e.g. 'Projects'
+  icon text,              -- lucide icon name
+  schema jsonb,           -- same fields[] format as above
+  nav_order int,          -- where it appears in sidebar
+  created_at timestamptz
+)
+
+-- Stores records for custom modules
+custom_records (
+  id uuid PRIMARY KEY,
+  org_id uuid,
+  module_id uuid REFERENCES custom_modules(id),
+  data jsonb,             -- {'field_name': value, ...}
+  created_at timestamptz,
+  updated_at timestamptz
+)
+```
+
+**Supported Field Types (V1):**
+`text` | `number` | `date` | `boolean` | `dropdown` (single select) | `multiselect` | `url` | `email` | `phone`
+
+---
+
+#### Feature Breakdown
+
+**Part A — Custom Fields on Existing Entities**
+- Settings → Custom Fields → pick entity type (Employee, Contact, Lead, Product, Supplier)
+- Add/edit/remove fields: name, label, field type, required toggle, dropdown options
+- Custom fields render automatically in: list table columns, detail/edit forms
+- Stored on each record as `custom_data: jsonb` column (add to existing tables)
+- GIN index on `custom_data` for query performance
+
+**Part B — Custom Module Builder**
+- Settings → Custom Modules → Create New Module
+- Define: module name, icon, fields (same field type palette)
+- BzHub auto-generates: sidebar nav item, list view table, create/edit form, record detail page
+- All CRUD rendered dynamically from the schema JSON
+- Module appears in sidebar under a "Custom" section
+
+**Part C — Navigation Config**
+- `org_nav_config` or extend Settings to store sidebar item order + visibility
+- Admins can reorder, show/hide both built-in and custom modules
+- Sidebar becomes config-driven (currently hardcoded)
+
+---
+
+#### Key Files to Create / Modify
+| File | Change |
+|---|---|
+| `src/app/settings/page.tsx` | Add "Custom Fields" and "Custom Modules" tabs |
+| `src/app/settings/custom-fields/page.tsx` | NEW — field builder UI per entity |
+| `src/app/settings/custom-modules/page.tsx` | NEW — module schema builder UI |
+| `src/app/custom/[slug]/page.tsx` | NEW — dynamic CRUD page rendered from schema |
+| `src/lib/db.ts` | `fetchCustomModule()`, `fetchCustomRecords()`, `upsertCustomRecord()` |
+| `src/components/layout/Sidebar.tsx` | Read nav config, render custom module items |
+| `src/components/CustomFieldRenderer.tsx` | NEW — renders any field type from schema JSON |
+| Supabase migrations | 3 new tables + `custom_data jsonb` on existing entity tables |
+
+---
+
+#### Phased Rollout
+| Phase | Scope | Effort |
+|---|---|---|
+| **2.5a** | Custom fields on Employees + Contacts | ~1 session |
+| **2.5b** | Custom Module Builder (full CRUD from schema) | ~2 sessions |
+| **2.5c** | Nav config — reorder/hide sidebar items | ~0.5 session |
+| **3.x** | Relational fields (link records across modules) | Phase 3 |
+| **4.x** | Workflow automation on custom modules | Phase 4 |
+
+**Recommended starting point:** Phase 2.5a — custom fields on Employees only. Prove the pattern, then extend.
+
+---
+
+#### Risks & Caveats
+- `jsonb` search is slower than typed columns — mitigate with GIN indexes
+- Schema changes (renaming/deleting fields) can orphan existing data — need migration UX
+- Multi-tenancy must be enforced via `org_id` on every query (RLS policy required)
+- This must be built **after FEAT-036 (Auth)** to have meaningful `org_id` — OR built with a single-org placeholder and migrated when auth lands
+
+#### Dependency
+- Soft dependency on **FEAT-036** (Supabase Auth) for true per-org isolation
+- Can ship Phase 2.5a/b with single-org assumption, migrate to multi-org after FEAT-037
+
+---
+
 ### FEAT-040 — GST / Tax Compliance (India)
 - **Status:** Open
 - **Priority:** High (if targeting India)

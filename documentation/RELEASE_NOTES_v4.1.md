@@ -1,5 +1,31 @@
 # BzHub v4.1.0 — Release Notes
 
+## v5.0.0 — Custom Fields Builder (FEAT-041 Phase 2.5a)
+**Date:** 2026-03-13
+
+### New Features
+- **Settings → Custom Fields** — define extra fields for Employee, Contact, Lead, or Product entities
+- Supported field types: Text, Number, Date, Yes/No, Dropdown, Email, Phone, URL
+- Dropdown fields support configurable options list
+- Field definitions stored in `localStorage` (`bzhub_custom_fields`) — no DB schema change required
+- **Employee form** now renders custom fields automatically (both Add and Edit dialogs)
+- Custom field values persist to Supabase `custom_data` table (JSONB); gracefully silenced if table not yet created
+- **`CustomFieldRenderer` component** — generic component reusable across all entity forms
+- SQL migration provided: `migrations/001_custom_data.sql` — run in Supabase SQL editor to activate value persistence
+
+### Architecture
+- `src/lib/customFields.ts` — NEW: types, localStorage helpers, `labelToId()`
+- `src/components/CustomFieldRenderer.tsx` — NEW: renders form inputs from schema
+- `src/lib/db.ts` — `fetchCustomData()`, `upsertCustomData()`; `createEmployee()` now returns inserted ID
+- `src/app/settings/page.tsx` — Custom Fields card with entity tabs and field builder UI
+- `src/app/hr/page.tsx` — Employee form wired to custom fields + custom data
+- `migrations/001_custom_data.sql` — NEW
+
+### Action Required
+Run `migrations/001_custom_data.sql` in Supabase SQL editor to enable custom field value storage.
+
+---
+
 ## v4.9.2 — Smart Insights Grouped by Category
 **Date:** 2026-03-12
 
