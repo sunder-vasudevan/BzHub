@@ -1,3 +1,6 @@
 Module,Item Type,Title,Description,Priority,Status,Created At,Notes
 Core,Feature,Inventory Service,Service layer for inventory CRUD and calculations,High,Planned,,
 UI,Feature,Modern Inventory Tab,Refined inventory UI backed only by services,Medium,Planned,,
+CRM,Feature,Post-Sale Fulfillment Stages (FEAT-042),Extend CRM pipeline beyond Won to include In Production / Production Complete / Shipped / Closed Won stages for end-to-end deal tracking,Medium,Planned,2026-03-15,Ref: MassTech APMaldi pipeline v1.92 — see FEATURE_REQUESTS_AND_BUGS.md
+CRM,Feature,Auto vs Manual Stage Transition Tagging (FEAT-043),Tag each pipeline stage transition as Automatic or Manual and surface indicator in Kanban UI with trigger description tooltip,Low,Planned,2026-03-15,Depends on FEAT-042 — ref MassTech APMaldi pipeline v1.92
+CRM,Feature,Team Ownership per Pipeline Stage (FEAT-044),Assign a responsible team to each pipeline stage — displayed on Kanban headers and deal cards with optional team-based filter view,Low,Planned,2026-03-15,Depends on FEAT-042 — optional integration with FEAT-021 and FEAT-022

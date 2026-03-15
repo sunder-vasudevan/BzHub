@@ -1111,3 +1111,51 @@ custom_records (
 - **Rationale:** Tally dominates Indian SMB accounting solely because of GST compliance. BzHub can compete directly and offer a modern cloud alternative. This is a moat in the Indian market.
 
 ---
+
+### FEAT-042 — Post-Sale Fulfillment Stages in CRM Pipeline
+- **Status:** Open
+- **Priority:** Medium
+- **Target Phase:** CRM / Operations
+- **Reference:** MassTech APMaldi Sales pipeline flow (v1.92) — `documentation/MassTech_Pipeline_Mapping.md`
+- **Summary:** Extend the CRM pipeline beyond "Won" to include production and shipping fulfillment stages, enabling end-to-end deal tracking from first contact through delivery.
+  - Add four post-sale stages: **In Production**, **Production Complete**, **Shipped**, **Closed Won**
+  - "Won" becomes an intermediate stage (Sales Order Confirmed), not a terminal one
+  - "Closed Won" becomes the new terminal success state
+  - Kanban, List, and Funnel views updated to accommodate 10-stage pipeline
+  - Post-sale stages visually separated from pre-sale stages (e.g. dashed divider or section header)
+- **Proposed full stage sequence:**
+  `New → Qualified → Proposal → PO Received → In Production → Production Complete → Shipped → Closed Won | Lost`
+- **Rationale:** MassTech's operations show that deals don't end at "Won" — production, shipping, and delivery happen after the sale. Collapsing these into "Won" loses visibility over the fulfillment pipeline. This is relevant to any product-based business using BzHub.
+- **Dependency:** Can be implemented standalone. Pairs well with FEAT-043 (auto/manual tagging) and FEAT-044 (team ownership).
+
+---
+
+### FEAT-043 — Auto vs. Manual Stage Transition Tagging
+- **Status:** Open
+- **Priority:** Low–Medium
+- **Target Phase:** CRM / UX
+- **Reference:** MassTech APMaldi Sales pipeline flow (v1.92) — `documentation/MassTech_Pipeline_Mapping.md`
+- **Summary:** Allow each pipeline stage transition to be tagged as **Automatic** (triggered by a system event) or **Manual** (requires a human action), and surface this in the UI.
+  - Stage config stores a `transition_type` field: `"auto"` or `"manual"`
+  - Kanban column headers or stage badges display a small indicator (e.g. a lightning bolt for auto, a hand icon for manual)
+  - Tooltip on the indicator explains the trigger condition (e.g. "Moves automatically when quote is sent")
+  - Admin-configurable trigger labels per stage
+- **Rationale:** In multi-step B2B pipelines, some stages advance automatically (e.g. when a quote is emailed) while others require deliberate action (e.g. receiving a PO). Surfacing this distinction reduces confusion and improves process adherence.
+- **Dependency:** Builds on FEAT-042 (extended stages). Aligns with FEAT-041 (Custom Fields) if stage config is made schema-driven.
+
+---
+
+### FEAT-044 — Team Ownership per Pipeline Stage
+- **Status:** Open
+- **Priority:** Low–Medium
+- **Target Phase:** CRM / HR Integration
+- **Reference:** MassTech APMaldi Sales pipeline flow (v1.92) — `documentation/MassTech_Pipeline_Mapping.md`
+- **Summary:** Assign a responsible team (or role) to each pipeline stage so it is clear who owns a deal at any point in the pipeline.
+  - Stage config stores an `owner_team` field (e.g. "Marketing", "Production", "Shipping", "Support")
+  - Team label shown on Kanban column headers and deal cards
+  - Optional: filter pipeline view by team to show only the stages relevant to a given department
+  - Optional: notify team members when a deal enters their stage (links to FEAT-021 Notification Center)
+- **Rationale:** In MassTech's flow, responsibility shifts from Marketing (stages 1–5) to Production/Shipping (stages 6–9) mid-pipeline. Without explicit ownership, deals can stall at handoff points. Team tags make handoffs explicit and accountable.
+- **Dependency:** Builds on FEAT-042 (extended stages). Optional integration with FEAT-021 (Notifications) and FEAT-022 (RBAC).
+
+---
