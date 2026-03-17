@@ -562,7 +562,7 @@ export default function HelpPage() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-8">
-          BzHub v4.6 · For support, contact your system administrator
+          BzHub v5.0.0 · For support, contact your system administrator
         </p>
       </div>
     </AppLayout>

@@ -16,7 +16,7 @@ import {
   UserCheck,
   ClipboardCheck,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -44,6 +44,14 @@ const navItems = [
 
 export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [companyName, setCompanyName] = useState("")
+
+  useEffect(() => {
+    const load = () => setCompanyName(localStorage.getItem("bzhub_company_name") ?? "")
+    load()
+    window.addEventListener("bzhub_company_changed", load)
+    return () => window.removeEventListener("bzhub_company_changed", load)
+  }, [])
 
   const initials = user
     .split(" ")
@@ -75,7 +83,7 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
           {!collapsed && (
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 font-bold text-lg"
+              className="flex items-center gap-2 font-bold text-lg min-w-0"
               style={{ color: "var(--brand-color)" }}
             >
               <span
@@ -84,7 +92,12 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
               >
                 Bz
               </span>
-              BzHub
+              <span className="flex flex-col leading-none min-w-0">
+                <span>BzHub</span>
+                {companyName && (
+                  <span className="text-[10px] font-normal text-muted-foreground truncate">{companyName}</span>
+                )}
+              </span>
             </Link>
           )}
           {collapsed && (
@@ -173,7 +186,7 @@ export default function Sidebar({ activePage, user, onLogout, mobileOpen, onMobi
           </Button>
           {!collapsed && (
             <p className="text-[10px] text-muted-foreground/50 text-center mt-3 select-none">
-              BzHub v4.0.0
+              BzHub v5.0.0
             </p>
           )}
         </div>

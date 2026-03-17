@@ -300,6 +300,7 @@ export default function SettingsPage() {
 
   function handleSaveCurrency() {
     localStorage.setItem("bzhub_currency", currency)
+    window.dispatchEvent(new Event("bzhub_currency_changed"))
     setCurrencySaved(true)
     setTimeout(() => setCurrencySaved(false), 3000)
   }
@@ -313,6 +314,10 @@ export default function SettingsPage() {
     fetchCompanySettings()
       .then((data: CompanyData) => {
         setCompany(data ?? {})
+        if (data?.company_name) {
+          localStorage.setItem("bzhub_company_name", data.company_name)
+          window.dispatchEvent(new Event("bzhub_company_changed"))
+        }
       })
       .catch(() => {
         // Endpoint may not exist yet — start with empty form
@@ -353,6 +358,10 @@ export default function SettingsPage() {
     try {
       await saveCompanySettings(data)
       setCompany(data)
+      if (data.company_name) {
+        localStorage.setItem("bzhub_company_name", data.company_name)
+        window.dispatchEvent(new Event("bzhub_company_changed"))
+      }
       setCompanySaved(true)
       setTimeout(() => setCompanySaved(false), 3000)
     } catch (e: unknown) {
