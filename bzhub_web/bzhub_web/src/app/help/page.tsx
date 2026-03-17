@@ -94,16 +94,28 @@ const sections: Section[] = [
     badge: "Operations",
     content: [
       {
-        heading: "Making a Sale",
-        text: "In the POS tab, click any product card to add it to the cart. Adjust quantities in the cart using the + / − buttons.",
+        heading: "Adding Items to Cart",
+        text: "In the POS tab, click any product card to add it to the cart. Items showing 'Out of Stock' are disabled and cannot be added.",
       },
       {
-        heading: "Completing a Sale",
-        text: "Once items are in the cart, enter the customer name (optional) and click 'Complete Sale'. The inventory quantities update automatically.",
+        heading: "Adjusting Quantities",
+        text: "Use the − and + buttons on each cart line to change quantity. The maximum is capped to available stock. Click × to remove an item.",
+      },
+      {
+        heading: "Payment Method",
+        text: "Select Cash, Card, or UPI before checking out. The payment method is recorded on the receipt.",
+      },
+      {
+        heading: "Checkout",
+        text: "Click Checkout to complete the sale. Sale records are created in the database and inventory quantities are automatically deducted.",
+      },
+      {
+        heading: "Receipt",
+        text: "A receipt modal appears after every successful checkout showing an itemized list, total, and payment method. Click Print to print it.",
       },
       {
         heading: "Bills History",
-        text: "All completed sales appear in the Bills section below the POS. Click 'Print' on any bill to open a print-friendly view.",
+        text: "All completed sales appear in the Bills tab. Click Print on any bill to open a print-friendly view.",
       },
     ],
   },
