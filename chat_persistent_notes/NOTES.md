@@ -19,7 +19,7 @@ Use this file to store anything you want me to remember between sessions and pro
 - Repo: `/Users/scottvalentino/BzHub`
 - Web app: `bzhub_web/bzhub_web/`
 
-**Current version:** v5.0.0 (2026-03-13) — live on Vercel
+**Current version:** v5.1.0 (2026-03-17) — live on Vercel
 
 **Live modules:** Dashboard (incl. Smart Insights grouped by category), Operations (Inventory, POS, Bills, Suppliers, Purchase Orders), HR (Employees, Payroll, Goals, Appraisals, Skills, Leave), CRM (Contacts, Leads — List / Kanban / Funnel views), Reports, Settings (incl. Industry Templates + dynamic brand color + **Custom Fields builder**), Help, Employee Self-Service Portal
 
@@ -49,10 +49,10 @@ Use this file to store anything you want me to remember between sessions and pro
 8. ~~**FEAT-038**~~ ✅ Done (v4.7.0) — Industry-Specific Templates (Retail, Clinic, Restaurant, Distributor — one-click setup)
 9. ~~**FEAT-032a**~~ ✅ Done (v4.8.0) — Smart Insights card on Dashboard (stock depletion, HR nudges, sales anomaly)
 10. ~~**FEAT-CRM-TABLE**~~ ✅ Done (v4.9.0) — CRM table view with inline stage selector (replaced Kanban)
-9. **FEAT-039** — Offline-First Mode ← **START HERE NEXT SESSION** (works without internet, syncs on reconnect)
-10. **FEAT-041** — Customizable SaaS Platform: Custom Fields + Module Builder (Phase 2.5 — extensibility foundation)
-11. **FEAT-040** — GST / Tax Compliance India (GST invoicing, GSTR-1/3B export — compete with Tally)
+9. **FEAT-041** — Customizable SaaS Platform: Custom Module Builder (Phase 2.5b — schema-defined CRUD modules) ← **START HERE NEXT SESSION**
+10. **FEAT-040** — GST / Tax Compliance India (GST invoicing, GSTR-1/3B export — compete with Tally)
 11. **FEAT-032** — AI-Powered Insights (stock forecasting, HR nudges, sales anomaly, NL queries)
+12. **FEAT-039** — Offline-First Mode (works without internet, syncs on reconnect) ← lowest priority
 
 ### 🔵 Phase 3 — Multi-User & SaaS Architecture
 12. **FEAT-036** — Supabase Auth (real login — blocker for multi-tenancy)

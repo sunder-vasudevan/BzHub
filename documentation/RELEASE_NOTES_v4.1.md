@@ -1,5 +1,28 @@
 # BzHub v4.1.0 — Release Notes
 
+## v5.1.0 — POS Overhaul + Bug Fixes
+**Date:** 2026-03-17
+
+### New Features
+- **POS — Working Checkout**: creates Supabase sale records and deducts inventory per line item on checkout
+- **POS — Qty Controls**: `−`/`+` buttons in cart per line item; capped to available stock
+- **POS — Payment Method**: Cash / Card / UPI selector in cart panel, recorded on receipt
+- **POS — Receipt Modal**: post-checkout itemized receipt with total, payment method, and print button
+- **POS — Stock Validation**: product cards show "Out of Stock" overlay; disabled when unavailable; cart prevents adding beyond stock
+
+### Bug Fixes
+- **Version number** unified to `v5.0.0` across login page, sidebar footer, and help page
+- **Currency reactivity**: changing currency in Settings now updates all pages instantly (no reload required) via `bzhub_currency_changed` event
+- **Company name in sidebar**: company name saved to `localStorage` on Settings load/save; displayed as subtitle under BzHub logo in sidebar; updates live
+
+### Architecture
+- `src/hooks/useCurrency.ts` — now event-driven; listens for `bzhub_currency_changed`
+- `src/app/settings/page.tsx` — dispatches `bzhub_currency_changed` and `bzhub_company_changed` events on save; caches company name to `localStorage`
+- `src/components/layout/Sidebar.tsx` — reads `bzhub_company_name` from `localStorage`; updates reactively
+- `src/app/operations/page.tsx` — POSTab fully rewired with checkout, receipt, stock controls
+
+---
+
 ## v5.0.0 — Custom Fields Builder (FEAT-041 Phase 2.5a)
 **Date:** 2026-03-13
 

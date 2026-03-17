@@ -71,3 +71,19 @@ At project end:
 ---
 
 *See also: `documentation/EFFICIENCY_WHITEPAPER.md` for full qualitative analysis.*
+
+---
+
+## Session — 2026-03-17
+
+**Version shipped:** v5.1.0
+**PO interaction time (approx):** ~15 min
+
+| # | Prompt (summary) | Output |
+|---|-----------------|--------|
+| 1 | Bzhubstart | Session start briefing; flagged NOTES.md vs memory version conflict |
+| 2 | Need to work on POS — very rudimentary | Read full POS code; presented gap analysis and proposed scope |
+| 3 | Scope works + 3 additional bugs (version mismatch, currency, company name) | Built all 4 items: POS overhaul + 3 bug fixes |
+| 4 | Yes (commit approval) | Committed v5.1.0, pushed to main, Vercel deploy triggered |
+| 5 | Make FEAT-039 last priority | Reordered backlog in NOTES.md, FEATURE_REQUESTS_AND_BUGS.md, memory |
+| 6 | bzhubwrap | Full session wrap |

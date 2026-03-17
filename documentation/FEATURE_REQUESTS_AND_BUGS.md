@@ -965,7 +965,7 @@ The key insight from Odoo is that it's not about having 100 features — it's ab
 
 ### FEAT-039 — Offline-First Mode
 - **Status:** Open
-- **Priority:** Medium
+- **Priority:** Low (deliberately deprioritized 2026-03-17 — moved to last in Phase 2 backlog)
 - **Target Phase:** Architecture / Reliability
 - **Summary:** App remains fully functional without internet connectivity and syncs data when reconnected.
   - Local IndexedDB or SQLite (via WASM) as offline store
@@ -1157,5 +1157,30 @@ custom_records (
   - Optional: notify team members when a deal enters their stage (links to FEAT-021 Notification Center)
 - **Rationale:** In MassTech's flow, responsibility shifts from Marketing (stages 1–5) to Production/Shipping (stages 6–9) mid-pipeline. Without explicit ownership, deals can stall at handoff points. Team tags make handoffs explicit and accountable.
 - **Dependency:** Builds on FEAT-042 (extended stages). Optional integration with FEAT-021 (Notifications) and FEAT-022 (RBAC).
+
+---
+
+### FEAT-POS-V2 — POS Overhaul (v5.1.0)
+- **Status:** ✅ Done (v5.1.0 — 2026-03-17)
+- **Priority:** —
+- **Summary:** Full POS rewrite from UI-only placeholder to working transaction system.
+  - Working checkout: creates Supabase sale records + deducts inventory per line item
+  - Qty controls (−/+) per cart line with stock cap
+  - Payment method selector: Cash / Card / UPI
+  - Receipt modal after checkout: itemized, total, print button
+  - Out-of-stock overlay + disabled state on product cards
+  - Inventory auto-reloads after checkout
+
+### BUG-VERSION-SYNC — Version Number Mismatch (v5.1.0)
+- **Status:** ✅ Fixed (v5.1.0 — 2026-03-17)
+- **Summary:** Version displayed as v4.0 on login page, v4.0.0 in sidebar, v4.6 in help page. All unified to v5.0.0.
+
+### BUG-CURRENCY-REACTIVITY — Currency Change Not Propagating (v5.1.0)
+- **Status:** ✅ Fixed (v5.1.0 — 2026-03-17)
+- **Summary:** Changing currency in Settings only took effect after full page reload. useCurrency hook now listens for bzhub_currency_changed event dispatched on save — all pages update instantly.
+
+### BUG-COMPANY-NAME — Company Name Not Shown in Sidebar (v5.1.0)
+- **Status:** ✅ Fixed (v5.1.0 — 2026-03-17)
+- **Summary:** Company name set in Settings was never displayed in the sidebar logo. Now cached to localStorage on Settings load/save and shown as subtitle under BzHub in sidebar. Updates live via bzhub_company_changed event.
 
 ---
