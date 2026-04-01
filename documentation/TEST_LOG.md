@@ -10,7 +10,7 @@
 ### [TEST-XXX] — Feature Name (FEAT-ID)
 **Date:** YYYY-MM-DD
 **Version:** vX.X.X
-**Tested by:** Sunder
+**Tested by:** Sunny Hayes
 **Test type:** Manual / Automated / Both
 **Environment:** Local / Vercel (prod)
 
@@ -27,7 +27,7 @@
 ### [TEST-001] — Approval Workflows (FEAT-034)
 **Date:** 2026-03-12
 **Version:** v4.4.0
-**Tested by:** Sunder
+**Tested by:** Sunny Hayes
 **Test type:** Manual
 **Environment:** Vercel (prod)
 
@@ -46,7 +46,7 @@
 ### [TEST-002] — Employee Self-Service Portal (FEAT-035)
 **Date:** 2026-03-12
 **Version:** v4.5.0
-**Tested by:** Sunder
+**Tested by:** Sunny Hayes
 **Test type:** Manual
 **Environment:** Vercel (prod)
 
@@ -64,7 +64,7 @@
 ### [TEST-003] — Industry Templates (FEAT-038)
 **Date:** 2026-03-12
 **Version:** v4.7.0
-**Tested by:** Sunder
+**Tested by:** Sunny Hayes
 **Test type:** Manual
 **Environment:** Vercel (prod)
 
@@ -82,7 +82,7 @@
 ### [TEST-004] — Dynamic Brand Color (v4.7.1)
 **Date:** 2026-03-12
 **Version:** v4.7.1
-**Tested by:** Sunder
+**Tested by:** Sunny Hayes
 **Test type:** Manual
 **Environment:** Vercel (prod)
 
@@ -98,7 +98,7 @@
 ### [TEST-005] — Custom Fields Builder (FEAT-041 Phase 2.5a)
 **Date:** 2026-03-13
 **Version:** v5.0.0
-**Tested by:** Sunder
+**Tested by:** Sunny Hayes
 **Test type:** Manual
 **Environment:** Vercel (prod)
 

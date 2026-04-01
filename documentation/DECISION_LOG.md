@@ -92,4 +92,4 @@
 **Reason:** Avoids an extra Supabase call on every page. Settings already fetches it from Supabase — we piggyback on that. Known limitation: first-login on a fresh browser shows no company name until Settings is visited. Acceptable for v5.1.0; can be fixed in AppLayout later.
 
 ### Decision: FEAT-039 Offline-First deprioritized to last in Phase 2
-**Reason:** Sunder's explicit direction. GST compliance and AI Insights deliver more immediate user value for the SMB target market than offline mode.
+**Reason:** Sunny Hayes's explicit direction. GST compliance and AI Insights deliver more immediate user value for the SMB target market than offline mode.
