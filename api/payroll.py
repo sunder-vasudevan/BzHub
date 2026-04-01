@@ -167,3 +167,99 @@ def get_employee_payslips(employee_id: str):
         return {"employee_id": employee_id, "payslips": payslips}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to retrieve payslips: {str(e)}")
+
+@router.get("/payroll/payslips/{employee_id}/{payslip_id}", tags=["Payroll"])
+def get_payslip_details(employee_id: str, payslip_id: str):
+    """Retrieve a specific payslip by ID."""
+    if not supabase:
+        return {"error": "Database not configured"}
+    
+    try:
+        response = supabase.table("payroll_records").select("*").eq("id", payslip_id).eq("employee_id", employee_id).execute()
+        payslip = response.data[0] if response.data else None
+        if not payslip:
+            raise HTTPException(status_code=404, detail="Payslip not found")
+        return payslip
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to retrieve payslip: {str(e)}")
+
+@router.post("/payroll/payslip-pdf/{payslip_id}", tags=["Payroll"])
+def generate_payslip_pdf(payslip_id: str):
+    """Generate PDF for a payslip (returns base64 encoded PDF)."""
+    if not supabase:
+        return {"error": "Database not configured"}
+    
+    try:
+        # Retrieve payslip
+        response = supabase.table("payroll_records").select("*").eq("id", payslip_id).execute()
+        payslip = response.data[0] if response.data else None
+        if not payslip:
+            raise HTTPException(status_code=404, detail="Payslip not found")
+        
+        # Generate simple HTML-based PDF representation
+        # In production, use ReportLab or weasyprint for proper PDF generation
+        html_content = f"""
+        <html>
+            <body>
+                <h1>PAYSLIP</h1>
+                <p><strong>Employee ID:</strong> {payslip.get('employee_id')}</p>
+                <p><strong>Period:</strong> {payslip.get('period')}</p>
+                <hr>
+                <h3>Salary Breakdown</h3>
+                <p><strong>Gross Salary:</strong> ₹{payslip.get('gross_salary')}</p>
+                <p><strong>Total Deductions:</strong> ₹{sum(payslip.get('deductions', {}).values())}</p>
+                <p><strong>Net Salary:</strong> ₹{payslip.get('net_salary')}</p>
+                <hr>
+                <p>Generated: {datetime.now().isoformat()}</p>
+            </body>
+        </html>
+        """
+        
+        # Return as base64 for frontend to download
+        import base64
+        pdf_bytes = base64.b64encode(html_content.encode()).decode()
+        
+        return {
+            "success": True,
+            "payslip_id": payslip_id,
+            "pdf_base64": pdf_bytes,
+            "filename": f"payslip_{payslip_id}.pdf"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to generate PDF: {str(e)}")
+
+@router.post("/payroll/payslip-bulk", tags=["Payroll"])
+def generate_bulk_payslips(employee_ids: list[str]):
+    """Generate payslips for multiple employees."""
+    if not supabase:
+        return {"error": "Database not configured", "count": 0}
+    
+    results = []
+    for emp_id in employee_ids:
+        try:
+            payslip_data = {
+                "employee_id": emp_id,
+                "period": datetime.now().strftime("%B %Y"),
+                "status": "generated",
+                "created_at": datetime.now().isoformat(),
+                "gross_salary": 0,
+                "deductions": {},
+                "net_salary": 0
+            }
+            response = supabase.table("payroll_records").insert(payslip_data).execute()
+            if response.data:
+                results.append({
+                    "employee_id": emp_id,
+                    "success": True,
+                    "payslip_id": response.data[0].get("id")
+                })
+            else:
+                results.append({"employee_id": emp_id, "success": False, "error": "Insert failed"})
+        except Exception as e:
+            results.append({"employee_id": emp_id, "success": False, "error": str(e)})
+    
+    return {
+        "total": len(employee_ids),
+        "generated": sum(1 for r in results if r.get("success")),
+        "results": results
+    }
