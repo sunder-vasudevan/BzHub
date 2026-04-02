@@ -152,10 +152,41 @@ export async function deleteEmployee(id: number) {
 export async function fetchPayrolls() {
   const { data, error } = await supabase
     .from('payroll')
-    .select('*')
+    .select('*, employees(name)')
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
-  return data ?? []
+  return (data ?? []).map((r: Record<string, unknown>) => {
+    const emp = r.employees as { name?: string } | null
+    return {
+      ...r,
+      employee_name: emp?.name ?? null,
+      gross_pay: Number(r.basic ?? 0) + Number(r.allowances ?? 0),
+      net_pay: Number(r.net ?? 0),
+      period_start: r.period ?? '',
+    }
+  })
+}
+
+export async function createPayroll(data: {
+  employee_id: number
+  period_start: string
+  period_end: string
+  basic: number
+  allowances: number
+  deductions: number
+  status: string
+}) {
+  const net = data.basic + data.allowances - data.deductions
+  const { error } = await supabase.from('payroll').insert({
+    employee_id: data.employee_id,
+    period: `${data.period_start} – ${data.period_end}`,
+    basic: data.basic,
+    allowances: data.allowances,
+    deductions: data.deductions,
+    net,
+    status: data.status,
+  })
+  if (error) throw new Error(error.message)
 }
 
 // ---- Company Settings ----
