@@ -188,6 +188,14 @@ const sections: Section[] = [
         heading: "Monthly Summary",
         text: "The card at the top of the Payroll tab shows the total gross payroll for the current month and how many records it includes.",
       },
+      {
+        heading: "Creating a Payroll Record",
+        text: "Click 'Create Payroll'. Select an employee and pay period (month + year). Enter the basic pay, allowances, and any manual deductions. If the employee has Loss of Pay (LOP) deductions for that period, they are automatically loaded and added to deductions. Click 'Save' to create the record.",
+      },
+      {
+        heading: "Loss of Pay (LOP) Auto-Deduction",
+        text: "When leave quota is exceeded (see Leave Quota below), LOP deductions are recorded automatically. When you create a payroll for the same employee and period, the LOP amount is fetched and pre-filled in the deductions field — no manual entry needed.",
+      },
     ],
   },
   {
@@ -258,15 +266,23 @@ const sections: Section[] = [
     content: [
       {
         heading: "Submitting a Leave Request",
-        text: "In the HR → Leave tab, click 'New Request'. Select the employee, leave type (Annual, Sick, Unpaid, Other), date range, and an optional reason. Click 'Submit Request'.",
+        text: "In the HR → Leave tab, click 'New Request'. Select the employee, leave type (Sick or Personal), date range, and an optional reason. Click 'Submit Request'.",
       },
       {
         heading: "Approving or Rejecting Leave",
         text: "Pending leave requests show green Approve and red Reject buttons. Click Approve to grant the leave or Reject to decline it. The status updates immediately.",
       },
       {
-        heading: "Leave Types",
-        text: "Annual — planned paid leave. Sick — medical leave. Unpaid — leave without pay. Other — any other reason.",
+        heading: "Leave Quota",
+        text: "Each employee gets 10 Sick and 10 Personal leave days per year. The form shows a quota badge (e.g. '3 / 10 used'). Sick and Personal leaves cannot be combined in a single request.",
+      },
+      {
+        heading: "Loss of Pay (LOP)",
+        text: "If an employee exceeds their quota, the excess days are marked as Loss of Pay at ₹100/day. An orange warning shows on the form. LOP is recorded and auto-included when payroll is created for that period.",
+      },
+      {
+        heading: "Year-End Leave Payout",
+        text: "At year end, click 'Year-End Payout' in the Leave tab. Unused Personal leaves are carried forward to next year (total capped at 20); any excess is paid out at ₹100/day. Sick leaves expire with no payout or carry-forward. Next year's balances are seeded automatically.",
       },
     ],
   },
