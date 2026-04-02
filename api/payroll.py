@@ -144,14 +144,29 @@ def generate_payslip(calc: PayrollCalculation) -> dict:
             "id": None,
             "note": "Database not configured - payslip not saved"
         }
-    
+
     try:
-        response = supabase.table("payroll_records").insert(payslip_data).execute()
+        total_allowances = sum(calc.allowances.values())
+        total_deductions = sum(deductions.values())
+        row = {
+            "employee_id": int(calc.employee_id) if calc.employee_id.isdigit() else None,
+            "period": payslip_data["period"],
+            "basic": calc.base_salary,
+            "allowances": total_allowances,
+            "deductions": total_deductions,
+            "net": net,
+            "status": "Draft",
+        }
+        if row["employee_id"] is None:
+            raise HTTPException(status_code=422, detail="employee_id must be a numeric employee ID")
+        response = supabase.table("payroll").insert(row).execute()
         return {
             "success": True,
             "payslip": payslip_data,
             "id": response.data[0].get("id") if response.data else None
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to generate payslip: {str(e)}")
 
@@ -162,7 +177,7 @@ def get_employee_payslips(employee_id: str):
         return {"employee_id": employee_id, "payslips": []}
     
     try:
-        response = supabase.table("payroll_records").select("*").eq("employee_id", employee_id).execute()
+        response = supabase.table("payroll").select("*").eq("employee_id", employee_id).order("created_at", desc=True).execute()
         payslips = response.data if hasattr(response, 'data') else []
         return {"employee_id": employee_id, "payslips": payslips}
     except Exception as e:
@@ -175,7 +190,7 @@ def get_payslip_details(employee_id: str, payslip_id: str):
         return {"error": "Database not configured"}
     
     try:
-        response = supabase.table("payroll_records").select("*").eq("id", payslip_id).eq("employee_id", employee_id).execute()
+        response = supabase.table("payroll").select("*").eq("id", payslip_id).eq("employee_id", employee_id).execute()
         payslip = response.data[0] if response.data else None
         if not payslip:
             raise HTTPException(status_code=404, detail="Payslip not found")
@@ -191,17 +206,14 @@ def generate_payslip_pdf(payslip_id: str):
     
     try:
         # Retrieve payslip
-        response = supabase.table("payroll_records").select("*").eq("id", payslip_id).execute()
+        response = supabase.table("payroll").select("*").eq("id", payslip_id).execute()
         payslip = response.data[0] if response.data else None
         if not payslip:
             raise HTTPException(status_code=404, detail="Payslip not found")
-        
-        deductions = payslip.get('deductions', {})
-        deduction_rows = "".join(
-            f"<tr><td>{k.replace('_', ' ').title()}</td><td style='text-align:right'>₹{v:,.2f}</td></tr>"
-            for k, v in deductions.items()
-        )
-        total_deductions = sum(deductions.values())
+
+        gross = float(payslip.get('basic', 0)) + float(payslip.get('allowances', 0))
+        total_deductions = float(payslip.get('deductions', 0))
+        net = float(payslip.get('net', 0))
         html_content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -220,14 +232,14 @@ def generate_payslip_pdf(payslip_id: str):
   <table>
     <tr><td><strong>Employee ID</strong></td><td>{payslip.get('employee_id')}</td></tr>
     <tr><td><strong>Period</strong></td><td>{payslip.get('period')}</td></tr>
-    <tr><td><strong>Gross Salary</strong></td><td>₹{payslip.get('gross_salary', 0):,.2f}</td></tr>
+    <tr><td><strong>Basic</strong></td><td>₹{float(payslip.get('basic', 0)):,.2f}</td></tr>
+    <tr><td><strong>Allowances</strong></td><td>₹{float(payslip.get('allowances', 0)):,.2f}</td></tr>
+    <tr><td><strong>Gross Salary</strong></td><td>₹{gross:,.2f}</td></tr>
   </table>
-  <h3>Deductions</h3>
   <table>
-    {deduction_rows}
     <tr class="total"><td>Total Deductions</td><td style='text-align:right'>₹{total_deductions:,.2f}</td></tr>
   </table>
-  <p class="net">Net Salary: ₹{payslip.get('net_salary', 0):,.2f}</p>
+  <p class="net">Net Salary: ₹{net:,.2f}</p>
   <p style="color:#9ca3af;font-size:0.8em">Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}</p>
 </body>
 </html>"""
@@ -262,16 +274,19 @@ def generate_bulk_payslips(entries: list[BulkPayrollEntry]):
             gross = calculate_gross_salary(entry.base_salary, entry.allowances)
             deductions = calculate_deductions(gross, entry.deductions_config)
             net = calculate_net_salary(gross, deductions)
+            if not entry.employee_id.isdigit():
+                results.append({"employee_id": entry.employee_id, "success": False, "error": "employee_id must be numeric"})
+                continue
             payslip_data = {
-                "employee_id": entry.employee_id,
-                "gross_salary": gross,
-                "deductions": deductions,
-                "net_salary": net,
+                "employee_id": int(entry.employee_id),
+                "basic": entry.base_salary,
+                "allowances": sum(entry.allowances.values()),
+                "deductions": sum(deductions.values()),
+                "net": net,
                 "period": datetime.now().strftime("%B %Y"),
-                "status": "generated",
-                "created_at": datetime.now().isoformat(),
+                "status": "Draft",
             }
-            response = supabase.table("payroll_records").insert(payslip_data).execute()
+            response = supabase.table("payroll").insert(payslip_data).execute()
             if response.data:
                 results.append({
                     "employee_id": entry.employee_id,

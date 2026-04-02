@@ -46,7 +46,7 @@ export default function PayrollCalculator() {
     const [historyLoading, setHistoryLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<Tab>('calculator');
-    const [employeeId, setEmployeeId] = useState<string>('USER_001');
+    const [employeeId, setEmployeeId] = useState<string>('');
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     // Debounced calculation (300ms delay)
@@ -197,11 +197,12 @@ export default function PayrollCalculator() {
 
                 {/* Employee ID Input */}
                 <div className="bg-white rounded-lg shadow p-6 mb-6">
-                    <label className="block text-sm font-medium text-gray-600 mb-2">Employee ID</label>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Employee ID <span className="text-gray-400 font-normal">(numeric)</span></label>
                     <input
-                        type="text"
+                        type="number"
                         value={employeeId}
                         onChange={(e) => setEmployeeId(e.target.value)}
+                        placeholder="e.g. 1"
                         className="w-full max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
