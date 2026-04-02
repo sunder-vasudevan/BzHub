@@ -89,21 +89,27 @@ def test_generate_payslip_pdf():
         mock_db.table().select().eq().execute.return_value = mock_response
         
         result = generate_payslip_pdf("PAYSLIP_001")
-        
+
         assert result["success"] == True
-        assert "pdf_base64" in result
+        assert "html_base64" in result
         assert result["payslip_id"] == "PAYSLIP_001"
+        assert result["filename"].endswith(".html")
 
 def test_generate_bulk_payslips():
-    """Test bulk payslip generation."""
+    """Test bulk payslip generation with salary data."""
     with patch('api.payroll.supabase') as mock_db:
         mock_response = MagicMock()
         mock_response.data = [{"id": "PAYSLIP_ID"}]
         mock_db.table().insert().execute.return_value = mock_response
-        
-        employee_ids = ["EMP_001", "EMP_002", "EMP_003"]
-        result = generate_bulk_payslips(employee_ids)
-        
+
+        from api.payroll import BulkPayrollEntry
+        entries = [
+            BulkPayrollEntry(employee_id="EMP_001", base_salary=50000),
+            BulkPayrollEntry(employee_id="EMP_002", base_salary=60000),
+            BulkPayrollEntry(employee_id="EMP_003", base_salary=70000),
+        ]
+        result = generate_bulk_payslips(entries)
+
         assert result["total"] == 3
         assert result["generated"] == 3
         assert len(result["results"]) == 3

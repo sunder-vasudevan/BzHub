@@ -42,8 +42,11 @@ Welcome to BzHub. This help file is context‑sensitive in the app. Use the Help
 - Print employee ID cards from the action buttons.
 
 ### Payroll (HR)
-- Add payroll records and update payment status.
-- Use preview/print options where available.
+- Use the **Calculator** tab to enter base salary, allowances, and deduction config (tax rate, insurance, loan EMI, professional tax).
+- Results update in real time — gross, deductions breakdown, and net salary.
+- Click **Generate Payslip** to save the current calculation as a payslip record.
+- Use the **Payslip History** tab to view all payslips for an employee.
+- Click **Download** on any payslip to open a printable HTML summary — use browser Print → Save as PDF.
 
 ### Appraisals (HR)
 - Run the appraisal workflow: Self → 360 → Manager → Final.

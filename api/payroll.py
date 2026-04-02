@@ -196,70 +196,95 @@ def generate_payslip_pdf(payslip_id: str):
         if not payslip:
             raise HTTPException(status_code=404, detail="Payslip not found")
         
-        # Generate simple HTML-based PDF representation
-        # In production, use ReportLab or weasyprint for proper PDF generation
-        html_content = f"""
-        <html>
-            <body>
-                <h1>PAYSLIP</h1>
-                <p><strong>Employee ID:</strong> {payslip.get('employee_id')}</p>
-                <p><strong>Period:</strong> {payslip.get('period')}</p>
-                <hr>
-                <h3>Salary Breakdown</h3>
-                <p><strong>Gross Salary:</strong> ₹{payslip.get('gross_salary')}</p>
-                <p><strong>Total Deductions:</strong> ₹{sum(payslip.get('deductions', {}).values())}</p>
-                <p><strong>Net Salary:</strong> ₹{payslip.get('net_salary')}</p>
-                <hr>
-                <p>Generated: {datetime.now().isoformat()}</p>
-            </body>
-        </html>
-        """
-        
-        # Return as base64 for frontend to download
+        deductions = payslip.get('deductions', {})
+        deduction_rows = "".join(
+            f"<tr><td>{k.replace('_', ' ').title()}</td><td style='text-align:right'>₹{v:,.2f}</td></tr>"
+            for k, v in deductions.items()
+        )
+        total_deductions = sum(deductions.values())
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; color: #333; }}
+  h1 {{ color: #1d4ed8; border-bottom: 2px solid #1d4ed8; padding-bottom: 8px; }}
+  table {{ width: 100%; border-collapse: collapse; margin: 16px 0; }}
+  td {{ padding: 8px 4px; border-bottom: 1px solid #e5e7eb; }}
+  .total {{ font-weight: bold; border-top: 2px solid #333; }}
+  .net {{ font-size: 1.4em; color: #16a34a; font-weight: bold; }}
+</style>
+</head>
+<body>
+  <h1>PAYSLIP</h1>
+  <table>
+    <tr><td><strong>Employee ID</strong></td><td>{payslip.get('employee_id')}</td></tr>
+    <tr><td><strong>Period</strong></td><td>{payslip.get('period')}</td></tr>
+    <tr><td><strong>Gross Salary</strong></td><td>₹{payslip.get('gross_salary', 0):,.2f}</td></tr>
+  </table>
+  <h3>Deductions</h3>
+  <table>
+    {deduction_rows}
+    <tr class="total"><td>Total Deductions</td><td style='text-align:right'>₹{total_deductions:,.2f}</td></tr>
+  </table>
+  <p class="net">Net Salary: ₹{payslip.get('net_salary', 0):,.2f}</p>
+  <p style="color:#9ca3af;font-size:0.8em">Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}</p>
+</body>
+</html>"""
+
         import base64
-        pdf_bytes = base64.b64encode(html_content.encode()).decode()
-        
+        html_b64 = base64.b64encode(html_content.encode()).decode()
+
         return {
             "success": True,
             "payslip_id": payslip_id,
-            "pdf_base64": pdf_bytes,
-            "filename": f"payslip_{payslip_id}.pdf"
+            "html_base64": html_b64,
+            "filename": f"payslip_{payslip_id}.html"
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to generate PDF: {str(e)}")
 
+class BulkPayrollEntry(BaseModel):
+    employee_id: str
+    base_salary: float
+    allowances: dict = {}
+    deductions_config: dict = {}
+
 @router.post("/payroll/payslip-bulk", tags=["Payroll"])
-def generate_bulk_payslips(employee_ids: list[str]):
-    """Generate payslips for multiple employees."""
+def generate_bulk_payslips(entries: list[BulkPayrollEntry]):
+    """Generate payslips for multiple employees with salary data."""
     if not supabase:
         return {"error": "Database not configured", "count": 0}
-    
+
     results = []
-    for emp_id in employee_ids:
+    for entry in entries:
         try:
+            gross = calculate_gross_salary(entry.base_salary, entry.allowances)
+            deductions = calculate_deductions(gross, entry.deductions_config)
+            net = calculate_net_salary(gross, deductions)
             payslip_data = {
-                "employee_id": emp_id,
+                "employee_id": entry.employee_id,
+                "gross_salary": gross,
+                "deductions": deductions,
+                "net_salary": net,
                 "period": datetime.now().strftime("%B %Y"),
                 "status": "generated",
                 "created_at": datetime.now().isoformat(),
-                "gross_salary": 0,
-                "deductions": {},
-                "net_salary": 0
             }
             response = supabase.table("payroll_records").insert(payslip_data).execute()
             if response.data:
                 results.append({
-                    "employee_id": emp_id,
+                    "employee_id": entry.employee_id,
                     "success": True,
                     "payslip_id": response.data[0].get("id")
                 })
             else:
-                results.append({"employee_id": emp_id, "success": False, "error": "Insert failed"})
+                results.append({"employee_id": entry.employee_id, "success": False, "error": "Insert failed"})
         except Exception as e:
-            results.append({"employee_id": emp_id, "success": False, "error": str(e)})
-    
+            results.append({"employee_id": entry.employee_id, "success": False, "error": str(e)})
+
     return {
-        "total": len(employee_ids),
+        "total": len(entries),
         "generated": sum(1 for r in results if r.get("success")),
         "results": results
     }
