@@ -387,7 +387,9 @@ function PayrollTab() {
       setError("")
       const [payrollData, empData] = await Promise.all([fetchPayrolls(), fetchEmployees()])
       setRecords(Array.isArray(payrollData) ? payrollData : [])
-      setEmployees(Array.isArray(empData) ? (empData as { employees: Employee[] }).employees ?? empData : [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const empResult = empData as any
+      setEmployees(Array.isArray(empResult) ? empResult : (empResult?.employees ?? []))
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load payroll")
     } finally {
