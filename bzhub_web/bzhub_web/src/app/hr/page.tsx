@@ -61,8 +61,17 @@ import {
   createLeaveRequest,
   updateLeaveRequestStatus,
   deleteLeaveRequest,
+  fetchLeaveBalance,
+  applyLeaveToBalance,
+  processYearEndLeave,
+  fetchLeaveDeductionsByPeriod,
+  countDays,
+  LEAVE_RATE,
+  SICK_QUOTA,
+  PERSONAL_QUOTA,
+  PERSONAL_CARRY_CAP,
 } from "@/lib/db"
-import type { Goal, Appraisal, Skill, EmployeeSkill, LeaveRequest } from "@/lib/db"
+import type { Goal, Appraisal, Skill, EmployeeSkill, LeaveRequest, LeaveBalance } from "@/lib/db"
 import { Plus, Users, DollarSign, Target, Star, Zap, CalendarDays, Check, X, Download } from "lucide-react"
 import { downloadCSV } from "@/lib/export"
 import { Separator } from "@/components/ui/separator"
@@ -381,6 +390,8 @@ function PayrollTab() {
   const [showAdd, setShowAdd] = useState(false)
   const [addEmployeeId, setAddEmployeeId] = useState("")
   const [addStatus, setAddStatus] = useState("Draft")
+  const [addPeriod, setAddPeriod] = useState("")        // e.g. "2026-04"
+  const [lopDeductions, setLopDeductions] = useState(0) // auto-loaded from leave_deductions
 
   const load = useCallback(async () => {
     try {
@@ -399,9 +410,21 @@ function PayrollTab() {
 
   useEffect(() => { load() }, [load])
 
+  // Auto-load LOP deductions when employee + period are both set
+  useEffect(() => {
+    setLopDeductions(0)
+    if (!addEmployeeId || !addPeriod.match(/^\d{4}-\d{2}$/)) return
+    fetchLeaveDeductionsByPeriod(addPeriod).then((deductions) => {
+      const empDeductions = deductions.filter(d => d.employee_id === Number(addEmployeeId))
+      const total = empDeductions.reduce((sum, d) => sum + Number(d.amount), 0)
+      setLopDeductions(total)
+    }).catch(() => null)
+  }, [addEmployeeId, addPeriod])
+
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const manualDeductions = Number(fd.get("deductions") || 0)
     try {
       await createPayroll({
         employee_id: Number(addEmployeeId),
@@ -409,12 +432,14 @@ function PayrollTab() {
         period_end: fd.get("period_end") as string,
         basic: Number(fd.get("basic")),
         allowances: Number(fd.get("allowances") || 0),
-        deductions: Number(fd.get("deductions") || 0),
+        deductions: manualDeductions + lopDeductions,
         status: addStatus,
       })
       setShowAdd(false)
       setAddEmployeeId("")
       setAddStatus("Draft")
+      setAddPeriod("")
+      setLopDeductions(0)
       await load()
       toast("Payroll record created", "success")
     } catch (e: unknown) {
@@ -503,7 +528,10 @@ function PayrollTab() {
       )}
 
       {/* Create Payroll Modal */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={(open) => {
+        setShowAdd(open)
+        if (!open) { setAddEmployeeId(""); setAddStatus("Draft"); setAddPeriod(""); setLopDeductions(0) }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Payroll</DialogTitle>
@@ -523,7 +551,8 @@ function PayrollTab() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-sm font-medium">Period Start</label>
-                <Input name="period_start" type="text" placeholder="2026-04-01" required />
+                <Input name="period_start" type="text" placeholder="2026-04-01" required
+                  onChange={(e) => setAddPeriod(e.target.value.slice(0, 7))} />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium">Period End</label>
@@ -540,10 +569,15 @@ function PayrollTab() {
                 <Input name="allowances" type="number" min="0" step="0.01" placeholder="0.00" />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Deductions</label>
+                <label className="text-sm font-medium">Other Deductions</label>
                 <Input name="deductions" type="number" min="0" step="0.01" placeholder="0.00" />
               </div>
             </div>
+            {lopDeductions > 0 && (
+              <div className="rounded-md bg-orange-50 border border-orange-200 p-3 text-sm text-orange-700">
+                ₹{lopDeductions} loss-of-pay deduction auto-added from approved leave this period.
+              </div>
+            )}
             <div className="space-y-1">
               <label className="text-sm font-medium">Status</label>
               <Select value={addStatus} onValueChange={setAddStatus}>
@@ -1546,23 +1580,67 @@ function SkillsTab() {
 }
 
 // ---- Leave Tab ----
+// Month/year select helpers for Safari-safe date input
+function DateSelects({ namePrefix, label }: { namePrefix: string; label: string }) {
+  const currentYear = new Date().getFullYear()
+  const years = [currentYear - 1, currentYear, currentYear + 1]
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ]
+  const days = Array.from({ length: 31 }, (_, i) => i + 1)
+  return (
+    <div className="space-y-1.5">
+      <Label>{label} *</Label>
+      <div className="flex gap-1">
+        <select name={`${namePrefix}_day`} className="flex-1 h-9 rounded-md border border-input px-2 text-sm bg-background" required>
+          <option value="">Day</option>
+          {days.map(d => <option key={d} value={String(d).padStart(2,"0")}>{d}</option>)}
+        </select>
+        <select name={`${namePrefix}_month`} className="flex-1 h-9 rounded-md border border-input px-2 text-sm bg-background" required>
+          <option value="">Month</option>
+          {months.map((m, i) => <option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>)}
+        </select>
+        <select name={`${namePrefix}_year`} className="flex-1 h-9 rounded-md border border-input px-2 text-sm bg-background" required>
+          <option value="">Year</option>
+          {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
+        </select>
+      </div>
+    </div>
+  )
+}
+
+function leaveDate(fd: FormData, prefix: string): string {
+  const y = fd.get(`${prefix}_year`) as string
+  const m = fd.get(`${prefix}_month`) as string
+  const d = fd.get(`${prefix}_day`) as string
+  return `${y}-${m}-${d}`
+}
+
 function LeaveTab() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [showAdd, setShowAdd] = useState(false)
+  const [showYearEnd, setShowYearEnd] = useState(false)
   const [addEmployeeId, setAddEmployeeId] = useState("")
-  const [addLeaveType, setAddLeaveType] = useState("Annual")
+  const [addLeaveType, setAddLeaveType] = useState("Sick")
+  const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | null>(null)
+  const [lopWarning, setLopWarning] = useState<string | null>(null)
+  const [yearEndResults, setYearEndResults] = useState<{ employee_id: number; personal_unused: number; carry_forward: number; payout_days: number; payout_amount: number }[]>([])
 
-  const LEAVE_TYPES = ["Annual", "Sick", "Unpaid", "Other"]
+  const LEAVE_TYPES = ["Sick", "Personal", "Unpaid", "Other"]
+  const currentYear = new Date().getFullYear()
 
   const load = useCallback(async () => {
     try {
       setError("")
       const [leavesData, empData] = await Promise.all([fetchLeaveRequests(), fetchEmployees()])
       setRequests(Array.isArray(leavesData) ? leavesData : [])
-      setEmployees(Array.isArray(empData) ? empData : [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const empResult = empData as any
+      setEmployees(Array.isArray(empResult) ? empResult : (empResult?.employees ?? []))
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load leave requests")
     } finally {
@@ -1572,20 +1650,68 @@ function LeaveTab() {
 
   useEffect(() => { load() }, [load])
 
+  // Load balance when employee or leave type changes (for Sick/Personal only)
+  useEffect(() => {
+    setLopWarning(null)
+    setSelectedBalance(null)
+    if (!addEmployeeId || !["Sick", "Personal"].includes(addLeaveType)) return
+    fetchLeaveBalance(Number(addEmployeeId), currentYear).then(setSelectedBalance).catch(() => null)
+  }, [addEmployeeId, addLeaveType, currentYear])
+
+  function computeLopWarning(fd: FormData): void {
+    if (!["Sick", "Personal"].includes(addLeaveType)) { setLopWarning(null); return }
+    const start = leaveDate(fd, "start")
+    const end = leaveDate(fd, "end")
+    if (!start.match(/^\d{4}-\d{2}-\d{2}$/) || !end.match(/^\d{4}-\d{2}-\d{2}$/)) return
+    const days = countDays(start, end)
+    if (!selectedBalance) return
+
+    const quota = addLeaveType === "Sick"
+      ? selectedBalance.sick_total - selectedBalance.sick_used
+      : (selectedBalance.personal_total + selectedBalance.personal_carried) - selectedBalance.personal_used
+
+    const lop = Math.max(0, days - quota)
+    if (lop > 0) {
+      setLopWarning(`⚠ ${lop} day${lop > 1 ? "s" : ""} exceed${lop === 1 ? "s" : ""} quota — ₹${lop * LEAVE_RATE} loss of pay will apply.`)
+    } else {
+      setLopWarning(null)
+    }
+  }
+
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const start = leaveDate(fd, "start")
+    const end = leaveDate(fd, "end")
+
+    // No clubbing check: prevent Sick+Personal overlap
+    if (["Sick", "Personal"].includes(addLeaveType)) {
+      const otherType = addLeaveType === "Sick" ? "Personal" : "Sick"
+      const overlap = requests.find(r =>
+        r.employee_id === Number(addEmployeeId) &&
+        r.leave_type === otherType &&
+        r.status !== "Rejected" &&
+        !(end < r.start_date || start > r.end_date)
+      )
+      if (overlap) {
+        toast(`Cannot overlap with existing ${otherType} leave (${overlap.start_date} – ${overlap.end_date}). Sick and Personal leaves cannot be clubbed.`, "error")
+        return
+      }
+    }
+
     try {
       await createLeaveRequest({
         employee_id: Number(addEmployeeId),
         leave_type: addLeaveType,
-        start_date: fd.get("start_date") as string,
-        end_date: fd.get("end_date") as string,
+        start_date: start,
+        end_date: end,
         reason: fd.get("reason") as string,
       })
       setShowAdd(false)
       setAddEmployeeId("")
-      setAddLeaveType("Annual")
+      setAddLeaveType("Sick")
+      setLopWarning(null)
+      setSelectedBalance(null)
       await load()
       toast("Leave request submitted", "success")
     } catch (e: unknown) {
@@ -1593,11 +1719,25 @@ function LeaveTab() {
     }
   }
 
-  async function handleApprove(id: number) {
+  async function handleApprove(r: LeaveRequest) {
     try {
-      await updateLeaveRequestStatus(id, "Approved")
+      await updateLeaveRequestStatus(r.id, "Approved")
+      // Apply to balance and check for LOP
+      if (["Sick", "Personal"].includes(r.leave_type)) {
+        const days = countDays(r.start_date, r.end_date)
+        const year = new Date(r.start_date).getFullYear()
+        const { lop_days, lop_amount } = await applyLeaveToBalance(
+          r.employee_id, r.id, r.leave_type as "Sick" | "Personal", days, year
+        )
+        if (lop_days > 0) {
+          toast(`Approved. ${lop_days} day${lop_days > 1 ? "s" : ""} over quota → ₹${lop_amount} loss of pay recorded.`, "success")
+        } else {
+          toast("Leave approved", "success")
+        }
+      } else {
+        toast("Leave approved", "success")
+      }
       await load()
-      toast("Leave approved", "success")
     } catch (e: unknown) {
       toast(e instanceof Error ? e.message : "Failed", "error")
     }
@@ -1624,33 +1764,76 @@ function LeaveTab() {
     }
   }
 
+  async function handleYearEnd() {
+    try {
+      const results = await processYearEndLeave(currentYear)
+      setYearEndResults(results)
+      setShowYearEnd(true)
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Year-end processing failed", "error")
+    }
+  }
+
   function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
     if (status === "Approved") return "default"
     if (status === "Rejected") return "destructive"
     return "outline"
   }
 
+  function balanceBadge(b: LeaveBalance | null, type: "sick" | "personal") {
+    if (!b) return null
+    const used = type === "sick" ? b.sick_used : b.personal_used
+    const total = type === "sick" ? b.sick_total : b.personal_total + b.personal_carried
+    const remaining = total - used
+    const variant = remaining <= 0 ? "destructive" : remaining <= 2 ? "secondary" : "outline"
+    return <Badge variant={variant} className="text-xs">{remaining}/{total} left</Badge>
+  }
+
   const pending = requests.filter((r) => r.status === "Pending").length
 
   return (
     <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-3 text-sm">
+        <Card><CardContent className="p-3">
+          <p className="text-xs text-muted-foreground">Sick Leave</p>
+          <p className="font-semibold">{SICK_QUOTA} days / year</p>
+          <p className="text-xs text-muted-foreground">Expires year-end</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3">
+          <p className="text-xs text-muted-foreground">Personal Leave</p>
+          <p className="font-semibold">{PERSONAL_QUOTA} days / year</p>
+          <p className="text-xs text-muted-foreground">Carry forward (max {PERSONAL_CARRY_CAP})</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3">
+          <p className="text-xs text-muted-foreground">Loss of Pay Rate</p>
+          <p className="font-semibold">₹{LEAVE_RATE} / day</p>
+          <p className="text-xs text-muted-foreground">Applied on quota exceeded</p>
+        </CardContent></Card>
+      </div>
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {requests.length} requests{pending > 0 && <span className="ml-2 text-orange-600 font-medium">({pending} pending)</span>}
         </p>
-        <Button onClick={() => setShowAdd(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> New Request
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleYearEnd}>Year-End Payout</Button>
+          <Button onClick={() => setShowAdd(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> New Request
+          </Button>
+        </div>
       </div>
 
       {error && <ErrorBox msg={error} />}
 
-      <Dialog open={showAdd} onOpenChange={(open) => { setShowAdd(open); if (!open) { setAddEmployeeId(""); setAddLeaveType("Annual") } }}>
+      {/* New Request Dialog */}
+      <Dialog open={showAdd} onOpenChange={(open) => {
+        setShowAdd(open)
+        if (!open) { setAddEmployeeId(""); setAddLeaveType("Sick"); setLopWarning(null); setSelectedBalance(null) }
+      }}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Leave Request</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAdd}>
+          <DialogHeader><DialogTitle>New Leave Request</DialogTitle></DialogHeader>
+          <form onSubmit={handleAdd} onChange={(e) => computeLopWarning(new FormData(e.currentTarget))}>
             <div className="space-y-4 py-4">
               <div className="space-y-1.5">
                 <Label>Employee *</Label>
@@ -1671,35 +1854,81 @@ function LeaveTab() {
                     {LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {selectedBalance && (
+                  <div className="flex gap-2 mt-1">
+                    {addLeaveType === "Sick" && <>{balanceBadge(selectedBalance, "sick")} <span className="text-xs text-muted-foreground">Sick</span></>}
+                    {addLeaveType === "Personal" && <>{balanceBadge(selectedBalance, "personal")} <span className="text-xs text-muted-foreground">Personal</span></>}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="start_date">Start Date *</Label>
-                  <Input name="start_date" type="date" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="end_date">End Date *</Label>
-                  <Input name="end_date" type="date" required />
-                </div>
+                <DateSelects namePrefix="start" label="Start Date" />
+                <DateSelects namePrefix="end" label="End Date" />
               </div>
+              {lopWarning && (
+                <div className="rounded-md bg-orange-50 border border-orange-200 p-3 text-sm text-orange-700">{lopWarning}</div>
+              )}
               <div className="space-y-1.5">
-                <Label htmlFor="reason">Reason</Label>
+                <Label>Reason</Label>
                 <Input name="reason" placeholder="Optional reason" />
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
-              </DialogClose>
+              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
               <Button type="submit" disabled={!addEmployeeId}>Submit Request</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {loading ? (
-        <Spinner />
-      ) : (
+      {/* Year-End Results Dialog */}
+      <Dialog open={showYearEnd} onOpenChange={setShowYearEnd}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Year-End Leave Payout — {currentYear}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Unused Personal leaves above {PERSONAL_CARRY_CAP} are paid out. Sick leaves expire. Carry forward seeded for {currentYear + 1}.
+            </p>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead className="text-right">Unused Personal</TableHead>
+                    <TableHead className="text-right">Carry Forward</TableHead>
+                    <TableHead className="text-right">Paid Out (days)</TableHead>
+                    <TableHead className="text-right">Payout (₹)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {yearEndResults.map((r) => {
+                    const emp = employees.find(e => e.id === r.employee_id)
+                    return (
+                      <TableRow key={r.employee_id}>
+                        <TableCell>{emp?.name ?? `#${r.employee_id}`}</TableCell>
+                        <TableCell className="text-right">{r.personal_unused}</TableCell>
+                        <TableCell className="text-right">{r.carry_forward}</TableCell>
+                        <TableCell className="text-right">{r.payout_days}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {r.payout_amount > 0 ? `₹${r.payout_amount}` : "—"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                  {yearEndResults.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button>Close</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {loading ? <Spinner /> : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -1707,9 +1936,9 @@ function LeaveTab() {
                 <TableHead>Employee</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Dates</TableHead>
+                <TableHead>Days</TableHead>
                 <TableHead>Reason</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Reviewed By</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -1717,58 +1946,38 @@ function LeaveTab() {
               {requests.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.employee_name ?? `#${r.employee_id}`}</TableCell>
-                  <TableCell>{r.leave_type}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">{r.leave_type}</Badge>
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {r.start_date} → {r.end_date}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
-                    {r.reason || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {r.reviewed_by || "—"}
-                  </TableCell>
+                  <TableCell className="text-xs">{countDays(r.start_date, r.end_date)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.reason || "—"}</TableCell>
+                  <TableCell><Badge variant={statusVariant(r.status)}>{r.status}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {r.status === "Pending" && (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
-                            onClick={() => handleApprove(r.id)}
-                          >
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => handleApprove(r)}>
                             <Check className="h-3 w-3 mr-1" /> Approve
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-destructive hover:bg-destructive/10"
-                            onClick={() => handleReject(r.id)}
-                          >
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                            onClick={() => handleReject(r.id)}>
                             <X className="h-3 w-3 mr-1" /> Reject
                           </Button>
                         </>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-destructive"
-                        onClick={() => handleDelete(r.id)}
-                      >
-                        Delete
-                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive"
+                        onClick={() => handleDelete(r.id)}>Delete</Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
               {requests.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground italic py-8">
-                    No leave requests found.
-                  </TableCell>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground italic py-8">No leave requests found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

@@ -613,6 +613,194 @@ export async function deleteLeaveRequest(id: number): Promise<void> {
   logAudit({ table_name: 'leave_requests', record_id: String(id), action: 'delete', summary: `Deleted leave request id ${id}` })
 }
 
+// ---- Leave Balances ----
+
+export const LEAVE_RATE = 100 // ₹ per day (testing value)
+export const SICK_QUOTA = 10
+export const PERSONAL_QUOTA = 10
+export const PERSONAL_CARRY_CAP = 20
+
+export interface LeaveBalance {
+  id: number
+  employee_id: number
+  year: number
+  sick_total: number
+  sick_used: number
+  personal_total: number
+  personal_used: number
+  personal_carried: number
+}
+
+export interface LeaveDeduction {
+  id: number
+  employee_id: number
+  leave_request_id?: number
+  year: number
+  leave_type: string
+  days: number
+  amount: number
+  period: string
+  payroll_id?: number
+  created_at?: string
+}
+
+/** Returns days between two date strings (inclusive) */
+export function countDays(start: string, end: string): number {
+  const s = new Date(start)
+  const e = new Date(end)
+  return Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1)
+}
+
+export async function fetchLeaveBalance(employee_id: number, year: number): Promise<LeaveBalance | null> {
+  const { data, error } = await supabase
+    .from('leave_balances')
+    .select('*')
+    .eq('employee_id', employee_id)
+    .eq('year', year)
+    .single()
+  if (error) return null
+  return data as LeaveBalance
+}
+
+export async function fetchAllLeaveBalances(year: number): Promise<LeaveBalance[]> {
+  const { data, error } = await supabase
+    .from('leave_balances')
+    .select('*')
+    .eq('year', year)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as LeaveBalance[]
+}
+
+/** Upsert balance row — creates if not exists */
+export async function ensureLeaveBalance(employee_id: number, year: number): Promise<LeaveBalance> {
+  const existing = await fetchLeaveBalance(employee_id, year)
+  if (existing) return existing
+  const { data, error } = await supabase
+    .from('leave_balances')
+    .insert({ employee_id, year, sick_total: SICK_QUOTA, sick_used: 0, personal_total: PERSONAL_QUOTA, personal_used: 0, personal_carried: 0 })
+    .select('*')
+    .single()
+  if (error) throw new Error(error.message)
+  return data as LeaveBalance
+}
+
+/**
+ * Called when a leave request is Approved.
+ * Increments used count. Returns { lop_days, lop_amount } if over quota.
+ */
+export async function applyLeaveToBalance(
+  employee_id: number,
+  leave_request_id: number,
+  leave_type: 'Sick' | 'Personal',
+  days: number,
+  year: number
+): Promise<{ lop_days: number; lop_amount: number }> {
+  const balance = await ensureLeaveBalance(employee_id, year)
+
+  let quota: number
+  let used: number
+  let field: string
+
+  if (leave_type === 'Sick') {
+    quota = balance.sick_total
+    used = balance.sick_used
+    field = 'sick_used'
+  } else {
+    quota = balance.personal_total + balance.personal_carried
+    used = balance.personal_used
+    field = 'personal_used'
+  }
+
+  const available = Math.max(0, quota - used)
+  const lop_days = Math.max(0, days - available)
+  const lop_amount = lop_days * LEAVE_RATE
+
+  // Increment used (cap at total to avoid negative available showing)
+  const { error } = await supabase
+    .from('leave_balances')
+    .update({ [field]: used + days })
+    .eq('employee_id', employee_id)
+    .eq('year', year)
+  if (error) throw new Error(error.message)
+
+  // Record deduction if loss of pay
+  if (lop_days > 0) {
+    const period = new Date().toISOString().slice(0, 7)
+    await supabase.from('leave_deductions').insert({
+      employee_id,
+      leave_request_id,
+      year,
+      leave_type,
+      days: lop_days,
+      amount: lop_amount,
+      period,
+    })
+  }
+
+  return { lop_days, lop_amount }
+}
+
+export async function fetchLeaveDeductions(employee_id: number, year: number): Promise<LeaveDeduction[]> {
+  const { data, error } = await supabase
+    .from('leave_deductions')
+    .select('*')
+    .eq('employee_id', employee_id)
+    .eq('year', year)
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as LeaveDeduction[]
+}
+
+export async function fetchLeaveDeductionsByPeriod(period: string): Promise<LeaveDeduction[]> {
+  const { data, error } = await supabase
+    .from('leave_deductions')
+    .select('*')
+    .eq('period', period)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as LeaveDeduction[]
+}
+
+/**
+ * Year-end processing:
+ * - Personal: unused days carry forward (new balance = old unused, cap 20 total)
+ *   Any unused above carry cap → paid out at LEAVE_RATE
+ * - Sick: unused days expire (reset to 0)
+ * Returns payout summary per employee.
+ */
+export async function processYearEndLeave(year: number): Promise<{
+  employee_id: number
+  personal_unused: number
+  carry_forward: number
+  payout_days: number
+  payout_amount: number
+}[]> {
+  const balances = await fetchAllLeaveBalances(year)
+  const results = []
+
+  for (const b of balances) {
+    const personal_unused = Math.max(0, (b.personal_total + b.personal_carried) - b.personal_used)
+    const carry_forward = Math.min(personal_unused, PERSONAL_CARRY_CAP)
+    const payout_days = personal_unused - carry_forward
+    const payout_amount = payout_days * LEAVE_RATE
+
+    // Seed next year's balance with carry forward
+    const nextYear = year + 1
+    await supabase.from('leave_balances').upsert({
+      employee_id: b.employee_id,
+      year: nextYear,
+      sick_total: SICK_QUOTA,
+      sick_used: 0,
+      personal_total: PERSONAL_QUOTA,
+      personal_used: 0,
+      personal_carried: carry_forward,
+    }, { onConflict: 'employee_id,year' })
+
+    results.push({ employee_id: b.employee_id, personal_unused, carry_forward, payout_days, payout_amount })
+  }
+
+  return results
+}
+
 // ---- Purchase Orders ----
 
 export interface PurchaseOrder {
