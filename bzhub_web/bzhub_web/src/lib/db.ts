@@ -155,16 +155,14 @@ export async function fetchPayrolls() {
     .select('*, employees(name)')
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
-  return (data ?? []).map((r: Record<string, unknown>) => {
-    const emp = r.employees as { name?: string } | null
-    return {
-      ...r,
-      employee_name: emp?.name ?? null,
-      gross_pay: Number(r.basic ?? 0) + Number(r.allowances ?? 0),
-      net_pay: Number(r.net ?? 0),
-      period_start: r.period ?? '',
-    }
-  })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    employee_name: r.employees?.name ?? null,
+    gross_pay: Number(r.basic ?? 0) + Number(r.allowances ?? 0),
+    net_pay: Number(r.net ?? 0),
+    period_start: r.period ?? '',
+  }))
 }
 
 export async function createPayroll(data: {
