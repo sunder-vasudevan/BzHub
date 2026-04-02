@@ -153,6 +153,22 @@ export async function fetchPayrolls() {
   return apiFetch('/hr/payroll');
 }
 
+export async function createPayroll(data: {
+  employee_id: number;
+  period_start: string;
+  period_end: string;
+  basic: number;
+  allowances: number;
+  deductions: number;
+  status: string;
+}) {
+  return apiFetch('/hr/payroll', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
 // ---- Settings / Company ----
 
 export async function fetchCompanySettings() {

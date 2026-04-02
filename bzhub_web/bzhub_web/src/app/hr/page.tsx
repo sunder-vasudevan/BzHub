@@ -42,6 +42,7 @@ import {
   updateEmployee,
   deleteEmployee,
   fetchPayrolls,
+  createPayroll,
   fetchGoals,
   createGoal,
   updateGoal,
@@ -374,36 +375,57 @@ function EmployeesTab() {
 // ---- Payroll Tab ----
 function PayrollTab() {
   const [records, setRecords] = useState<PayrollRecord[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [showAdd, setShowAdd] = useState(false)
+  const [addEmployeeId, setAddEmployeeId] = useState("")
+  const [addStatus, setAddStatus] = useState("Draft")
 
-  useEffect(() => {
-    fetchPayrolls()
-      .then((data) => {
-        const list = Array.isArray(data) ? data : []
-        setRecords(list)
-      })
-      .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : "Failed to load payroll")
-      })
-      .finally(() => setLoading(false))
+  const load = useCallback(async () => {
+    try {
+      setError("")
+      const [payrollData, empData] = await Promise.all([fetchPayrolls(), fetchEmployees()])
+      setRecords(Array.isArray(payrollData) ? payrollData : [])
+      setEmployees(Array.isArray(empData) ? (empData as { employees: Employee[] }).employees ?? empData : [])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load payroll")
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  // Total gross for this month
+  useEffect(() => { load() }, [load])
+
+  async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    try {
+      await createPayroll({
+        employee_id: Number(addEmployeeId),
+        period_start: fd.get("period_start") as string,
+        period_end: fd.get("period_end") as string,
+        basic: Number(fd.get("basic")),
+        allowances: Number(fd.get("allowances") || 0),
+        deductions: Number(fd.get("deductions") || 0),
+        status: addStatus,
+      })
+      setShowAdd(false)
+      setAddEmployeeId("")
+      setAddStatus("Draft")
+      await load()
+      toast("Payroll record created", "success")
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : "Failed to create payroll", "error")
+    }
+  }
+
   const now = new Date()
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
-  const monthRecords = records.filter((r) => {
-    const period = r.period_start ?? ""
-    return period.startsWith(thisMonth)
-  })
-  const monthTotal = monthRecords.reduce(
-    (sum, r) => sum + Number(r.gross_pay || 0),
-    0
-  )
+  const monthRecords = records.filter((r) => (r.period_start ?? "").startsWith(thisMonth))
+  const monthTotal = monthRecords.reduce((sum, r) => sum + Number(r.gross_pay || 0), 0)
 
-  function payrollStatusVariant(
-    status?: string
-  ): "default" | "secondary" | "destructive" | "outline" {
+  function payrollStatusVariant(status?: string): "default" | "secondary" | "destructive" | "outline" {
     if (!status) return "secondary"
     const s = status.toLowerCase()
     if (s === "paid") return "default"
@@ -413,7 +435,6 @@ function PayrollTab() {
 
   return (
     <div className="space-y-4">
-      {/* Summary card */}
       <Card>
         <CardContent className="p-4 flex items-center gap-4">
           <div
@@ -429,6 +450,11 @@ function PayrollTab() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{records.length} records</p>
+        <Button onClick={() => setShowAdd(true)} size="sm">+ Create Payroll</Button>
+      </div>
 
       {error && <ErrorBox msg={error} />}
 
@@ -453,20 +479,12 @@ function PayrollTab() {
                     {r.employee_name ?? `Employee #${r.employee_id}`}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
-                    {r.period_start && r.period_end
-                      ? `${r.period_start} – ${r.period_end}`
-                      : r.period_start ?? "—"}
+                    {r.period_start ?? "—"}
                   </TableCell>
-                  <TableCell className="text-right">
-                    ${Number(r.gross_pay || 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${Number(r.net_pay || 0).toFixed(2)}
-                  </TableCell>
+                  <TableCell className="text-right">${Number(r.gross_pay || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">${Number(r.net_pay || 0).toFixed(2)}</TableCell>
                   <TableCell>
-                    <Badge variant={payrollStatusVariant(r.status)}>
-                      {r.status ?? "Draft"}
-                    </Badge>
+                    <Badge variant={payrollStatusVariant(r.status)}>{r.status ?? "Draft"}</Badge>
                   </TableCell>
                 </TableRow>
               ))}
@@ -481,6 +499,68 @@ function PayrollTab() {
           </Table>
         </div>
       )}
+
+      {/* Create Payroll Modal */}
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Payroll</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Employee</label>
+              <Select value={addEmployeeId} onValueChange={setAddEmployeeId} required>
+                <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                <SelectContent>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={String(emp.id)}>{emp.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Period Start</label>
+                <Input name="period_start" type="text" placeholder="2026-04-01" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Period End</label>
+                <Input name="period_end" type="text" placeholder="2026-04-30" required />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Basic</label>
+                <Input name="basic" type="number" min="0" step="0.01" placeholder="0.00" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Allowances</label>
+                <Input name="allowances" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Deductions</label>
+                <Input name="deductions" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={addStatus} onValueChange={setAddStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit">Create</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
