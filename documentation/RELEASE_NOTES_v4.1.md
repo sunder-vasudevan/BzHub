@@ -1,4 +1,35 @@
-# BzHub v4.1.0 — Release Notes
+# BzHub Release Notes
+
+## v5.2.0 — Payroll + Leave Quota System
+**Date:** 2026-04-02
+
+### New Features
+- **Create Payroll button + modal** — HR → Payroll tab now has a "Create Payroll" button; modal collects employee, period (Safari-safe selects), basic, allowances, deductions
+- **Auto LOP inclusion** — when creating payroll, loss-of-pay deductions for the selected employee+period are automatically loaded and added to deductions
+- **Leave Quota Tracking** — 10 Sick + 10 Personal leaves per employee per year
+  - Quota badge shown on leave form; orange warning when over quota
+  - No clubbing of Sick + Personal leave types
+  - Exceeding quota triggers LOP at ₹100/day (configurable constant)
+- **Year-End Payout** — HR → Leave tab: "Year-End Payout" button
+  - Personal leaves: unused carried forward (capped at 20 total); excess paid out at ₹100/day
+  - Sick leaves: expire (no payout, no carry-forward)
+  - Seeds next year's balances automatically
+
+### Database
+- `leave_balances` — per-employee per-year quota tracking (applied via `migrations/002_leave_balances.sql`)
+- `leave_deductions` — LOP records per leave request, linked to payroll
+- 23 employees seeded with 2026 balances
+
+### Architecture
+- `src/lib/db.ts` — `fetchLeaveBalance`, `fetchAllLeaveBalances`, `ensureLeaveBalance`, `applyLeaveToBalance`, `fetchLeaveDeductions`, `fetchLeaveDeductionsByPeriod`, `processYearEndLeave`, `createPayroll`, updated `fetchPayrolls`
+- `src/app/hr/page.tsx` — LeaveTab rewritten with quota badges, LOP warnings, `DateSelects` component (Safari-safe); PayrollTab updated with LOP auto-load
+- `documentation/HELP.md` — Payroll and Leave sections updated
+
+### Bug Fixes (Copilot Payroll review)
+- `api/payroll.py` — bulk endpoint now requires `BulkPayrollEntry`; PDF endpoint returns `html_base64`; DB calls point to existing `payroll` table
+- `frontend/components/PayrollCalculator.tsx` — removed 215-line duplicate block
+
+---
 
 ## v5.1.0 — POS Overhaul + Bug Fixes
 **Date:** 2026-03-17

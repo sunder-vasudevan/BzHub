@@ -20,6 +20,7 @@ Used for the final Engineering Efficiency analysis when BzHub reaches its target
 | 2026-03-12 | Dynamic brand color + Smart Insights + CRM views + seed data | v4.7.1: dynamic brand color (14 files, CSS vars); v4.8.0: Smart Insights dashboard card (stock depletion, HR nudges, sales anomaly, grouped by category); v4.9.0: CRM table view with inline stage selector; v4.9.1: CRM view switcher (List/Kanban/Funnel); v4.9.2: grouped insights UI; seed.mjs: 7 inventory items + 85 sales txns + 3 employees + 6 CRM leads + HR data | ~35 | 762 insertions, 302 deletions this session. CRM Kanban + Funnel built by background agent in parallel. |
 | 2026-03-13 | FEAT-041 Phase 2.5a — Custom Fields Builder + architecture strategy | Customizable SaaS architecture strategy (L1–L5 analysis, pros/cons/feasibility); FEAT-041 spec written + parked in tracker; v5.0.0: Custom Fields builder in Settings (entity tabs, field types, dropdown options), CustomFieldRenderer component, Employee form integration, custom_data Supabase table + migration, db.ts helpers | ~30 | 500 insertions. TypeScript clean. Graceful fallback if Supabase table not yet created. |
 | 2026-03-13 | Efficiency whitepaper v1.1 — real time logging data + graphs | EFFICIENCY_WHITEPAPER.md v1.1: integrated INTERACTION_LOG data, reworked estimates (60–120x compression ratio, 2–4x multiplier), v5.0.0 data, extended Appendix A–D, Mermaid charts; generate_whitepaper_docx.py: 4 matplotlib charts (session efficiency, commits/day, LOC/release, team comparison), new Appendix D; generate_exec_deck.py: new slide 5b "Measured Time on Task", updated all KPIs + conclusion; .docx regenerated | ~20 | .pptx failed ENOSPC (sandbox disk limit); .docx generated successfully. No product feature shipped this session. |
+| 2026-04-02 | Review + fix Copilot payroll; add Create Payroll button; full leave quota system | Copilot payroll bugs fixed (duplicate code, wrong table, corrupt PDF, missing routes); Create Payroll modal added; leave quota system (10S+10P, LOP ₹100/day, no clubbing, carry-forward, year-end payout); migrations/002 applied to prod; 23 employees seeded; v5.2.0 deployed | ~60 | RTK 98.6% efficiency. Real app is bzhub_web/ — Copilot scaffold (frontend/) is unused. |
 
 ---
 
@@ -27,7 +28,7 @@ Used for the final Engineering Efficiency analysis when BzHub reaches its target
 
 | Metric | Value |
 |--------|-------|
-| Total sessions logged | 4 |
+| Total sessions logged | 5 |
 | Total interaction time | ~130 mins |
 | Features shipped | FEAT-038 (v4.7.0), brand color (v4.7.1), FEAT-032a Smart Insights (v4.8.0), CRM table (v4.9.0), CRM view switcher (v4.9.1), grouped insights (v4.9.2) — plus prior sessions: FEAT-021/023/024/025/026 (v4.6.0), FEAT-035 (v4.5.0), FEAT-034 (v4.4.0) |
 | Bugs fixed | — |
